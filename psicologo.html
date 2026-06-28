@@ -355,9 +355,9 @@ const horariosDisponiveis = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00
 
 // Demo data fallback
 const demoData = {
-  'demo-1': { id:'demo-1', nome:'Dra. Juliana Melo', crp:'CRP 06/123456', abordagem:'TCC', especialidades:['Ansiedade','Burnout','Depressão','Autoestima'], valor_sessao:120, bio:'Psicóloga clínica com 8 anos de experiência no tratamento de ansiedade, burnout e depressão. Formação em TCC pela USP com especialização em saúde do trabalhador. Atendimentos online e presenciais.', formacao:'Psicologia — USP (2016)', pos_graduacao:'Terapia Cognitivo-Comportamental — IP-USP', disponibilidade:'manha' },
-  'demo-2': { id:'demo-2', nome:'Dr. Rafael Costa', crp:'CRP 06/654321', abordagem:'Psicanálise', especialidades:['Trauma','Relacionamentos','Luto'], valor_sessao:150, bio:'Especialista em trauma e relações interpessoais pela abordagem psicanalítica. Dez anos de clínica com adultos e grupos.', formacao:'Psicologia — PUC-SP (2014)', pos_graduacao:'Psicanálise — SBPSP', disponibilidade:'tarde' },
-  'demo-3': { id:'demo-3', nome:'Dra. Camila Torres', crp:'CRP 06/789012', abordagem:'Humanista', especialidades:['Autoestima','Luto','Ansiedade','Identidade'], valor_sessao:100, bio:'Foco em desenvolvimento pessoal, autoconhecimento e processos de luto. Atendimento sensível e centrado na pessoa.', formacao:'Psicologia — UNIP (2018)', pos_graduacao:'Psicoterapia Humanista — IHP', disponibilidade:'noite' },
+  'demo-1': { id:'demo-1', nome:'Dra. Juliana Melo', crp:'CRP 06/123456', abordagem:'TCC', especialidades:['Ansiedade','Burnout','Depressão','Autoestima'],  bio:'Psicóloga clínica com 8 anos de experiência no tratamento de ansiedade, burnout e depressão. Formação em TCC pela USP com especialização em saúde do trabalhador. Atendimentos online e presenciais.', formacao:'Psicologia — USP (2016)', pos_graduacao:'Terapia Cognitivo-Comportamental — IP-USP', disponibilidade:'manha' },
+  'demo-2': { id:'demo-2', nome:'Dr. Rafael Costa', crp:'CRP 06/654321', abordagem:'Psicanálise', especialidades:['Trauma','Relacionamentos','Luto'],  bio:'Especialista em trauma e relações interpessoais pela abordagem psicanalítica. Dez anos de clínica com adultos e grupos.', formacao:'Psicologia — PUC-SP (2014)', pos_graduacao:'Psicanálise — SBPSP', disponibilidade:'tarde' },
+  'demo-3': { id:'demo-3', nome:'Dra. Camila Torres', crp:'CRP 06/789012', abordagem:'Humanista', especialidades:['Autoestima','Luto','Ansiedade','Identidade'],  bio:'Foco em desenvolvimento pessoal, autoconhecimento e processos de luto. Atendimento sensível e centrado na pessoa.', formacao:'Psicologia — UNIP (2018)', pos_graduacao:'Psicoterapia Humanista — IHP', disponibilidade:'noite' },
 };
 
 function gerarDias() {
@@ -475,7 +475,7 @@ function renderizarPerfil(p) {
           </div>
           <div class="agenda-body">
             <div class="valor-sessao">
-              <span class="valor-num">R$ ${p.valor_sessao || '—'}</span>
+              <span class="valor-num">R$ 50,00</span>
               <span class="valor-label">/ sessão via Mind</span>
             </div>
 
@@ -599,7 +599,7 @@ async function carregar() {
 
   const { data, error } = await db
     .from('psicologos')
-    .select('id, nome, crp, abordagem, email, foto_url, especialidades, valor_sessao, disponibilidade, bio, formacao, pos_graduacao')
+    .select('id, nome, crp, abordagem, email, foto_url, especialidades, disponibilidade, bio, formacao, pos_graduacao')
     .eq('id', psiId)
     .maybeSingle();
 

@@ -392,7 +392,7 @@ function rng(seed, arr) { return arr[seed % arr.length]; }
 async function carregar() {
   const { data, error } = await db
     .from('psicologos')
-    .select('id, nome, crp, abordagem, email, foto_url, especialidades, valor_sessao, disponibilidade, bio')
+    .select('id, nome, crp, abordagem, email, foto_url, especialidades, disponibilidade, bio')
     .order('nome');
 
   if (error || !data || data.length === 0) {
@@ -402,7 +402,7 @@ async function carregar() {
     todosOsPsis = data.map((p, i) => ({
       ...p,
       especialidades: p.especialidades || gerarEsp(i),
-      valor_sessao: p.valor_sessao || null,
+      
       disponibilidade: p.disponibilidade || rng(i, demoExtra.disponibilidade),
       bio: p.bio || '',
     }));
@@ -419,12 +419,12 @@ function gerarEsp(seed) {
 
 function gerarDemoData() {
   return [
-    { id: 'demo-1', nome: 'Dra. Juliana Melo', crp: 'CRP 06/123456', abordagem: 'TCC', especialidades: ['Ansiedade', 'Burnout', 'Depressão'], valor_sessao: 120, disponibilidade: 'manha', bio: 'Psicóloga clínica com 8 anos de experiência.' },
-    { id: 'demo-2', nome: 'Dr. Rafael Costa', crp: 'CRP 06/654321', abordagem: 'Psicanálise', especialidades: ['Trauma', 'Relacionamentos'], valor_sessao: 150, disponibilidade: 'tarde', bio: 'Especialista em trauma e relações interpessoais.' },
-    { id: 'demo-3', nome: 'Dra. Camila Torres', crp: 'CRP 06/789012', abordagem: 'Humanista', especialidades: ['Autoestima', 'Luto', 'Ansiedade'], valor_sessao: 100, disponibilidade: 'noite', bio: 'Foco em desenvolvimento pessoal e autoconhecimento.' },
-    { id: 'demo-4', nome: 'Dr. André Vieira', crp: 'CRP 06/234567', abordagem: 'ACT', especialidades: ['TDAH', 'Burnout'], valor_sessao: 130, disponibilidade: 'manha', bio: 'Abordagem baseada em valores e mindfulness.' },
-    { id: 'demo-5', nome: 'Dra. Mariana Luz', crp: 'CRP 06/345678', abordagem: 'EMDR', especialidades: ['Trauma', 'Ansiedade', 'Depressão'], valor_sessao: 160, disponibilidade: 'tarde', bio: 'Especialista em EMDR para trauma e fobias.' },
-    { id: 'demo-6', nome: 'Dra. Beatriz Nunes', crp: 'CRP 06/456789', abordagem: 'Gestalt', especialidades: ['Relacionamentos', 'Autoestima'], valor_sessao: 110, disponibilidade: 'noite', bio: 'Psicóloga gestáltica com ênfase em presença e contato.' },
+    { id: 'demo-1', nome: 'Dra. Juliana Melo', crp: 'CRP 06/123456', abordagem: 'TCC', especialidades: ['Ansiedade', 'Burnout', 'Depressão'], disponibilidade: 'manha', bio: 'Psicóloga clínica com 8 anos de experiência.' },
+    { id: 'demo-2', nome: 'Dr. Rafael Costa', crp: 'CRP 06/654321', abordagem: 'Psicanálise', especialidades: ['Trauma', 'Relacionamentos'], disponibilidade: 'tarde', bio: 'Especialista em trauma e relações interpessoais.' },
+    { id: 'demo-3', nome: 'Dra. Camila Torres', crp: 'CRP 06/789012', abordagem: 'Humanista', especialidades: ['Autoestima', 'Luto', 'Ansiedade'], disponibilidade: 'noite', bio: 'Foco em desenvolvimento pessoal e autoconhecimento.' },
+    { id: 'demo-4', nome: 'Dr. André Vieira', crp: 'CRP 06/234567', abordagem: 'ACT', especialidades: ['TDAH', 'Burnout'], disponibilidade: 'manha', bio: 'Abordagem baseada em valores e mindfulness.' },
+    { id: 'demo-5', nome: 'Dra. Mariana Luz', crp: 'CRP 06/345678', abordagem: 'EMDR', especialidades: ['Trauma', 'Ansiedade', 'Depressão'], disponibilidade: 'tarde', bio: 'Especialista em EMDR para trauma e fobias.' },
+    { id: 'demo-6', nome: 'Dra. Beatriz Nunes', crp: 'CRP 06/456789', abordagem: 'Gestalt', especialidades: ['Relacionamentos', 'Autoestima'], disponibilidade: 'noite', bio: 'Psicóloga gestáltica com ênfase em presença e contato.' },
   ];
 }
 
@@ -449,7 +449,7 @@ function renderizar(lista) {
   grid.className = 'grid-psi';
   grid.innerHTML = lista.map(p => {
     const iniciais = inicialStr(p.nome);
-    const valor = p.valor_sessao ? `<strong>R$ ${p.valor_sessao}/sessão</strong>` : `<strong>A consultar</strong>`;
+    const valor = `<strong>R$ 50,00/sessão</strong>`;
     const espTags = (p.especialidades || []).slice(0,3).map(e => `<span class="tag-esp">${e}</span>`).join('');
     return `
     <a href="psicologo.html?id=${p.id}" class="card-psi">
