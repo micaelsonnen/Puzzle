@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mind — Contratos</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F7F4EF; --surface: #FFFFFF; --surface2: #f0ece6; --border: #E2DED8;
+  --navy: #2D4A6B; --sage: #5B8C6E; --text: #1A2332; --muted: #6B7A8D; --success: #5B8C6E;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; }
+.topbar a { color: var(--muted); text-decoration: none; font-size: 14px; }
+.container { max-width: 820px; margin: 0 auto; padding: 28px; }
+.intro { margin-bottom: 24px; }
+.intro h2 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+.intro p { color: var(--muted); font-size: 14px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; padding: 14px 20px; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+td { padding: 16px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+.doc-nome { font-weight: 600; }
+.doc-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.badge.assinado { background: rgba(91,140,110,0.15); color: var(--success); }
+.badge.pendente { background: rgba(180,83,9,0.15); color: #b45309; }
+.link-ver { color: var(--navy); font-size: 13px; text-decoration: none; font-weight: 600; }
+.loading { text-align: center; color: var(--muted); padding: 30px; }
+
+.info-box { font-size: 12px; color: var(--muted); background: var(--surface2); border-radius: 10px; padding: 12px 16px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="topbar"><a href="dashboard-psicologo.html">← Voltar ao dashboard</a></div>
+
+<div class="container">
+  <div class="intro">
+    <h2>Contratos</h2>
+    <p>Documentos aceitos no seu cadastro na plataforma Mind</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>Documento</th><th>Status</th><th>Data</th><th></th></tr></thead>
+      <tbody id="lista-contratos">
+        <tr><td colspan="4"><div class="loading">Carregando...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box">
+    Estes documentos regem sua relação com a Mind, incluindo o modelo de financiamento compartilhado, o sigilo dos dados clínicos dos seus pacientes e as regras de uso da plataforma. Em caso de dúvida, entre em contato com o suporte.
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const DOCUMENTOS = [
+  { nome: 'Termos de Uso', desc: 'Consentimento livre e esclarecido', href: 'termos-de-uso.html' },
+  { nome: 'Política de Privacidade', desc: 'Tratamento de dados pessoais e sensíveis (LGPD)', href: 'politica-de-privacidade.html' },
+  { nome: 'Contrato de Prestação de Serviços', desc: 'SaaS — inclui Anexo 1 (parceria com empresas) e Anexo 2 (confidencialidade)', href: 'contrato-prestacao-servicos.html' },
+];
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  const { data: psi } = await db.from('psicologos').select('aceite_contrato, data_aceite_contrato').eq('email', session.user.email).maybeSingle();
+
+  const assinado = !!psi?.aceite_contrato;
+  const dataAceite = psi?.data_aceite_contrato ? new Date(psi.data_aceite_contrato).toLocaleString('pt-BR') : '—';
+
+  document.getElementById('lista-contratos').innerHTML = DOCUMENTOS.map(doc => `
+    <tr>
+      <td>
+        <div class="doc-nome">${doc.nome}</div>
+        <div class="doc-desc">${doc.desc}</div>
+      </td>
+      <td><span class="badge ${assinado ? 'assinado' : 'pendente'}">${assinado ? 'Assinado' : 'Pendente'}</span></td>
+      <td>${dataAceite}</td>
+      <td><a class="link-ver" href="${doc.href}" target="_blank">Ver documento →</a></td>
+    </tr>
+  `).join('');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mind — Meu Plano</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F7F4EF; --surface: #FFFFFF; --surface2: #f0ece6; --border: #E2DED8;
+  --navy: #2D4A6B; --sage: #5B8C6E; --text: #1A2332; --muted: #6B7A8D;
+  --warning: #b45309; --error: #b91c1c; --success: #5B8C6E;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; gap: 16px; }
+.topbar a { color: var(--muted); text-decoration: none; font-size: 14px; }
+.container { max-width: 900px; margin: 0 auto; padding: 28px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--surface); padding: 6px; border-radius: 12px; border: 1px solid var(--border); width: fit-content; }
+.tab { padding: 8px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--muted); border: none; background: none; }
+.tab.active { background: var(--surface2); color: var(--text); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.alert { border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; font-size: 14px; display: none; }
+.alert.vencida { background: rgba(185,28,28,0.08); border: 1px solid rgba(185,28,28,0.2); color: var(--error); display: block; }
+.alert.ativa { background: rgba(91,140,110,0.08); border: 1px solid rgba(91,140,110,0.2); color: var(--sage); display: block; }
+
+.grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+.card h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.card .sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.beneficio { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin-bottom: 12px; }
+.beneficio .check { color: var(--sage); font-weight: 700; }
+
+.plano-opcoes { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.plano-opcao { border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.plano-opcao.selected { border-color: var(--navy); background: var(--surface2); }
+.plano-opcao input { width: 16px; height: 16px; }
+.plano-opcao .preco { margin-left: auto; font-weight: 700; }
+
+.btn-renovar { width: 100%; background: linear-gradient(135deg, var(--navy), var(--sage)); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 8px; }
+
+.status-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.status-item:last-child { border-bottom: none; }
+.status-item .label { color: var(--muted); }
+.badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge.ativa { background: rgba(91,140,110,0.15); color: var(--sage); }
+.badge.vencida { background: rgba(185,28,28,0.15); color: var(--error); }
+.badge.cancelada { background: rgba(107,122,141,0.15); color: var(--muted); }
+.badge.pago { background: rgba(91,140,110,0.15); color: var(--sage); }
+.badge.pendente { background: rgba(180,83,9,0.15); color: var(--warning); }
+.badge.atrasado { background: rgba(185,28,28,0.15); color: var(--error); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 8px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+.loading { text-align: center; color: var(--muted); padding: 30px; }
+</style>
+</head>
+<body>
+<div class="topbar"><a href="dashboard-psicologo.html">← Voltar ao dashboard</a></div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="abrirTab('plano', this)">Plano</button>
+    <button class="tab" onclick="abrirTab('historico', this)">Histórico de pagamentos</button>
+  </div>
+
+  <!-- ABA PLANO -->
+  <div id="tab-plano" class="tab-content active">
+    <div id="alerta-status"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Plano Mind</h3>
+        <div class="sub">Acesso completo à agenda, prontuário estruturado e intermediação de pacientes patrocinados.</div>
+        <div class="beneficio"><span class="check">✓</span> Perfil público na plataforma Mind</div>
+        <div class="beneficio"><span class="check">✓</span> Prontuário estruturado com linha do tempo do tratamento</div>
+        <div class="beneficio"><span class="check">✓</span> Intermediação de pacientes patrocinados por empresas</div>
+        <div class="beneficio"><span class="check">✓</span> Suporte técnico da equipe Mind</div>
+
+        <div class="plano-opcoes">
+          <label class="plano-opcao selected" id="opcao-mensal">
+            <input type="radio" name="plano" value="mensal" checked onchange="selecionarPlano('mensal')">
+            <div>Mensal</div>
+            <div class="preco">R$ 120,00/mês</div>
+          </label>
+          <label class="plano-opcao" id="opcao-anual">
+            <input type="radio" name="plano" value="anual" onchange="selecionarPlano('anual')">
+            <div>Anual <span style="color:var(--sage);font-size:12px">(2 meses grátis)</span></div>
+            <div class="preco">R$ 1.200,00/à vista</div>
+          </label>
+        </div>
+
+        <button class="btn-renovar" onclick="renovarPlano()">Renovar plano</button>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:15px">Status da assinatura</h3>
+        <div class="status-item"><span class="label">Status</span><span id="status-badge">—</span></div>
+        <div class="status-item"><span class="label">Periodicidade</span><span id="status-periodicidade">—</span></div>
+        <div class="status-item"><span class="label">Vigência até</span><span id="status-vigencia">—</span></div>
+        <div class="status-item"><span class="label">Valor</span><span id="status-valor">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA HISTÓRICO -->
+  <div id="tab-historico" class="tab-content">
+    <div class="card">
+      <h3 style="font-size:15px">Histórico de pagamentos</h3>
+      <div id="lista-historico"><div class="loading">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let psicologo = null;
+let planoSelecionado = 'mensal';
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  const { data: psi } = await db.from('psicologos').select('*').eq('email', session.user.email).single();
+  if (!psi) { window.location.href = 'dashboard-paciente.html'; return; }
+  psicologo = psi;
+
+  renderStatus();
+  carregarHistorico();
+}
+
+function renderStatus() {
+  const status = psicologo.status_assinatura || 'ativa';
+  const badge = document.getElementById('status-badge');
+  badge.innerHTML = `<span class="badge ${status}">${status}</span>`;
+
+  document.getElementById('status-periodicidade').textContent = psicologo.plano === 'anual' ? 'Anual' : 'Mensal';
+  document.getElementById('status-vigencia').textContent = psicologo.vigencia_ate ? new Date(psicologo.vigencia_ate).toLocaleDateString('pt-BR') : '—';
+  document.getElementById('status-valor').textContent = psicologo.plano === 'anual' ? 'R$ 1.200,00/ano' : 'R$ 120,00/mês';
+
+  const alertaEl = document.getElementById('alerta-status');
+  if (status === 'vencida') {
+    alertaEl.innerHTML = `<div class="alert vencida">⚠️ <strong>Sua assinatura venceu.</strong> Você não aparecerá para novos pacientes e não poderá registrar novas sessões até renovar.</div>`;
+  } else if (status === 'ativa') {
+    alertaEl.innerHTML = `<div class="alert ativa">✅ Sua assinatura está em dia.</div>`;
+  }
+}
+
+function selecionarPlano(plano) {
+  planoSelecionado = plano;
+  document.getElementById('opcao-mensal').classList.toggle('selected', plano === 'mensal');
+  document.getElementById('opcao-anual').classList.toggle('selected', plano === 'anual');
+}
+
+async function renovarPlano() {
+  const valor = planoSelecionado === 'anual' ? 1200.00 : 120.00;
+  const hoje = new Date();
+  const vigenciaAte = new Date(hoje);
+  if (planoSelecionado === 'anual') vigenciaAte.setFullYear(vigenciaAte.getFullYear() + 1);
+  else vigenciaAte.setMonth(vigenciaAte.getMonth() + 1);
+
+  // Registra a mensalidade/pagamento
+  await db.from('mensalidades_psicologos').insert({
+    psicologo_id: psicologo.id,
+    mes_referencia: hoje.toISOString().slice(0, 10),
+    valor,
+    status_pagamento: 'pago',
+    data_vencimento: hoje.toISOString().slice(0, 10),
+    data_pagamento: new Date().toISOString()
+  });
+
+  // Atualiza status da assinatura
+  const { error } = await db.from('psicologos').update({
+    plano: planoSelecionado,
+    status_assinatura: 'ativa',
+    vigencia_ate: vigenciaAte.toISOString().slice(0, 10)
+  }).eq('id', psicologo.id);
+
+  if (error) { alert('Erro ao renovar plano: ' + error.message); return; }
+
+  psicologo.plano = planoSelecionado;
+  psicologo.status_assinatura = 'ativa';
+  psicologo.vigencia_ate = vigenciaAte.toISOString().slice(0, 10);
+  renderStatus();
+  carregarHistorico();
+  alert('Plano renovado com sucesso!');
+}
+
+async function carregarHistorico() {
+  const { data } = await db.from('mensalidades_psicologos').select('*').eq('psicologo_id', psicologo.id).order('mes_referencia', { ascending: false });
+  const el = document.getElementById('lista-historico');
+  if (!data?.length) { el.innerHTML = '<div class="loading">Nenhum pagamento registrado ainda</div>'; return; }
+
+  el.innerHTML = `<table>
+    <thead><tr><th>Referência</th><th>Valor</th><th>Vencimento</th><th>Pagamento</th><th>Status</th></tr></thead>
+    <tbody>${data.map(m => `
+      <tr>
+        <td>${new Date(m.mes_referencia).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</td>
+        <td>R$ ${Number(m.valor).toFixed(2)}</td>
+        <td>${m.data_vencimento ? new Date(m.data_vencimento).toLocaleDateString('pt-BR') : '—'}</td>
+        <td>${m.data_pagamento ? new Date(m.data_pagamento).toLocaleDateString('pt-BR') : '—'}</td>
+        <td><span class="badge ${m.status_pagamento}">${m.status_pagamento}</span></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+function abrirTab(nome, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + nome).classList.add('active');
+  el.classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
