@@ -276,25 +276,39 @@ async function carregarHoje() {
 
 async function carregarAlertas() {
   const el = document.getElementById('lista-alertas');
-  // Busca pacientes com >= 2 faltas no último mês
-  const { data: faltas } = await db.from('sessoes').select('paciente_id, pacientes(nome)').eq('psicologo_id', psicologoId).eq('status', 'falta');
-  
+
+  const [faltasRes, intercorrenciasRes] = await Promise.all([
+    db.from('sessoes').select('paciente_id, pacientes(nome)').eq('psicologo_id', psicologoId).eq('status', 'falta'),
+    db.from('intercorrencias').select('paciente_id, descricao, gravidade, data_registro, pacientes(nome)').eq('psicologo_id', psicologoId).in('gravidade', ['media', 'alta']).order('data_registro', { ascending: false }).limit(10)
+  ]);
+
+  const alertas = [];
+
+  // Faltas recorrentes (>= 2 faltas)
   const contagem = {};
-  faltas?.forEach(f => {
+  faltasRes.data?.forEach(f => {
     const id = f.paciente_id;
     if (!contagem[id]) contagem[id] = { nome: f.pacientes?.nome, qtd: 0 };
     contagem[id].qtd++;
   });
+  Object.values(contagem).filter(a => a.qtd >= 2).forEach(a => {
+    alertas.push({ icon: '📅', nome: a.nome, detalhe: `${a.qtd} faltas registradas` });
+  });
 
-  const alertas = Object.values(contagem).filter(a => a.qtd >= 2);
+  // Intercorrências clínicas (média/alta gravidade)
+  intercorrenciasRes.data?.forEach(i => {
+    const icon = i.gravidade === 'alta' ? '🔴' : '🟠';
+    alertas.push({ icon, nome: i.pacientes?.nome || '—', detalhe: `Intercorrência (${i.gravidade}): ${i.descricao}` });
+  });
+
   if (!alertas.length) { el.innerHTML = '<div class="empty">✅ Sem alertas no momento</div>'; return; }
 
   el.innerHTML = alertas.map(a => `
     <div class="agenda-item">
-      <span class="nav-icon">⚠️</span>
+      <span class="nav-icon">${a.icon}</span>
       <div class="agenda-info">
         <div class="nome">${a.nome}</div>
-        <div class="detalhe">${a.qtd} faltas registradas</div>
+        <div class="detalhe">${a.detalhe}</div>
       </div>
     </div>`).join('');
 }
@@ -326,12 +340,18 @@ async function carregarPacientes() {
   const el = document.getElementById('tabela-pacientes');
   if (!data?.length) { el.innerHTML = '<div class="empty">Nenhum paciente cadastrado</div>'; return; }
 
+  // Busca a hipótese diagnóstica ativa de cada paciente (fonte de verdade atual,
+  // substitui o campo fixo diagnostico_cid que não registrava evolução)
+  const { data: hipoteses } = await db.from('hipoteses_diagnosticas').select('paciente_id, cid').eq('psicologo_id', psicologoId).eq('ativa', true);
+  const cidPorPaciente = {};
+  hipoteses?.forEach(h => { cidPorPaciente[h.paciente_id] = h.cid; });
+
   el.innerHTML = `<table>
-    <thead><tr><th>Nome</th><th>CID</th><th>Sessões</th><th>Status</th><th>Ação</th></tr></thead>
+    <thead><tr><th>Nome</th><th>Hipótese diagnóstica</th><th>Sessões</th><th>Status</th><th>Ação</th></tr></thead>
     <tbody>${data.map(p => `
       <tr>
         <td><strong>${p.nome}</strong></td>
-        <td>${p.diagnostico_cid || '—'}</td>
+        <td>${cidPorPaciente[p.id] || p.diagnostico_cid || '—'}</td>
         <td>${p.total_sessoes || 0}</td>
         <td><span class="badge ${p.status === 'ativo' ? 'ok' : 'falta'}">${p.status}</span></td>
         <td><a class="link" href="paciente.html?id=${p.id}">Ver ficha →</a></td>
