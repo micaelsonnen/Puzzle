@@ -84,6 +84,24 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 .economia-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .loading { text-align: center; color: var(--muted); padding: 40px; font-size: 14px; }
 .sem-dados { text-align: center; color: var(--muted); padding: 20px; font-size: 14px; }
+
+/* Linha do tempo (somente leitura) */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+.timeline-item { position: relative; padding-bottom: 22px; }
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-dot { position: absolute; left: -28px; top: 3px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--surface); }
+.timeline-dot.sessao { background: var(--navy); }
+.timeline-dot.hipotese { background: var(--sage); }
+.timeline-dot.intercorrencia-leve { background: #b45309; }
+.timeline-dot.intercorrencia-moderada { background: #d97706; }
+.timeline-dot.intercorrencia-grave { background: var(--error); }
+.timeline-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.timeline-card .tc-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.timeline-card .tc-tipo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); }
+.timeline-card .tc-data { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.timeline-card .tc-titulo { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.timeline-card .tc-desc { font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -99,6 +117,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 <div class="tabs-bar">
   <button class="tab-btn active" onclick="abrirTab('inicio', this)">🏠 Início</button>
   <button class="tab-btn" onclick="abrirTab('progresso', this)">📈 Meu Progresso</button>
+  <button class="tab-btn" onclick="abrirTab('timeline', this)">🧭 Linha do tempo</button>
   <button class="tab-btn" onclick="abrirTab('sessoes', this)">📋 Sessões</button>
   <button class="tab-btn" onclick="abrirTab('pagamento', this)">💳 Pagamento</button>
 </div>
@@ -162,6 +181,15 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
     <div class="card">
       <h3>🏆 Marcos da jornada</h3>
       <div id="marcos-lista"><div class="loading">Carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- LINHA DO TEMPO -->
+  <div id="tab-timeline" class="tab-content">
+    <div class="card">
+      <h3>🧭 Sua linha do tempo</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Sessões, marcos e observações do seu psicólogo ao longo do tratamento.</p>
+      <div id="lista-timeline-paciente"><div class="loading">Carregando...</div></div>
     </div>
   </div>
 
@@ -375,12 +403,64 @@ async function salvarCheckin() {
   document.getElementById('btn-checkin').style.display = 'none';
 }
 
+async function carregarLinhaDoTempoPaciente() {
+  const el = document.getElementById('lista-timeline-paciente');
+  el.innerHTML = '<div class="loading">Carregando...</div>';
+
+  const [{ data: sessoes }, { data: hipoteses }, { data: intercorrencias }] = await Promise.all([
+    db.from('sessoes').select('data_hora, resumo_sessao').eq('paciente_id', pacienteData.id).eq('status', 'realizada'),
+    db.from('hipoteses_diagnosticas').select('cid, descricao, criado_em, ativa').eq('paciente_id', pacienteData.id),
+    db.from('intercorrencias').select('data, descricao, gravidade').eq('paciente_id', pacienteData.id)
+  ]);
+
+  const eventos = [];
+
+  (sessoes || []).forEach(s => eventos.push({
+    tipo: 'sessão', dotClass: 'sessao', data: s.data_hora,
+    titulo: 'Sessão realizada',
+    desc: s.resumo_sessao || 'Sem resumo registrado pelo seu psicólogo'
+  }));
+
+  (hipoteses || []).forEach(h => eventos.push({
+    tipo: 'acompanhamento clínico', dotClass: 'hipotese', data: h.criado_em,
+    titulo: 'Seu psicólogo atualizou sua avaliação clínica',
+    desc: h.descricao || 'Detalhes com seu psicólogo na próxima sessão'
+  }));
+
+  (intercorrencias || []).forEach(i => eventos.push({
+    tipo: 'observação', dotClass: 'intercorrencia-' + (i.gravidade || 'leve'), data: i.data,
+    titulo: 'Registro do seu psicólogo',
+    desc: i.descricao
+  }));
+
+  if (!eventos.length) {
+    el.innerHTML = '<div class="sem-dados">Sua jornada está começando! Assim que você tiver sessões e registros, eles aparecem aqui.</div>';
+    return;
+  }
+
+  eventos.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+  el.innerHTML = `<div class="timeline">` + eventos.map(e => `
+    <div class="timeline-item">
+      <div class="timeline-dot ${e.dotClass}"></div>
+      <div class="timeline-card">
+        <div class="tc-header">
+          <span class="tc-tipo">${e.tipo}</span>
+          <span class="tc-data">${e.data ? new Date(e.data).toLocaleDateString('pt-BR') : '—'}</span>
+        </div>
+        <div class="tc-titulo">${e.titulo}</div>
+        <div class="tc-desc">${e.desc}</div>
+      </div>
+    </div>`).join('') + `</div>`;
+}
+
 function abrirTab(nome, el) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + nome).classList.add('active');
   el.classList.add('active');
   if (nome === 'progresso') carregarProgresso();
+  if (nome === 'timeline') carregarLinhaDoTempoPaciente();
   if (nome === 'sessoes') carregarHistSessoes();
   if (nome === 'pagamento') carregarPagamentos();
 }
