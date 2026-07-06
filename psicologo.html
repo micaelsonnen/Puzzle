@@ -587,18 +587,33 @@ async function confirmarAgendamento() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) {
     fecharModal();
-    alert('Você precisa estar logado para agendar. Faça login no site.');
-    window.location.href = 'index.html';
+    window.location.href = 'cadastro-paciente.html?psicologo=' + psicologo.id;
     return;
   }
 
   const email = session.user.email;
-  const { data: paciente } = await db.from('pacientes').select('id').eq('email', email).maybeSingle();
+  let { data: paciente } = await db.from('pacientes').select('id').eq('email', email).maybeSingle();
 
   if (!paciente) {
-    fecharModal();
-    alert('Para agendar, você precisa ser cadastrado como paciente na plataforma.');
-    return;
+    // Usuário já autenticado (ex.: fez login antes de navegar até aqui) mas
+    // ainda sem ficha de paciente — cria a ficha autônoma na hora, já
+    // vinculada a este psicólogo, em vez de travar o agendamento.
+    const { data: novoPaciente, error: erroPaciente } = await db.from('pacientes').insert({
+      nome: session.user.user_metadata?.nome || email,
+      email,
+      psicologo_id: psicologo.id,
+      data_inicio: new Date().toISOString().slice(0, 10),
+      valor_paciente: 10,
+      status: 'ativo',
+      total_sessoes: 0
+    }).select('id').single();
+
+    if (erroPaciente) {
+      fecharModal();
+      alert('Não foi possível concluir seu cadastro como paciente: ' + erroPaciente.message);
+      return;
+    }
+    paciente = novoPaciente;
   }
 
   // Salvar agendamento (se a tabela agendamentos existir)
