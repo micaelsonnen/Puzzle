@@ -363,13 +363,21 @@ const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let psicologo = null;
-let diaSel = null;
+let diaSel = null;      // data ISO (YYYY-MM-DD) selecionada
+let diaSelTexto = null; // texto de exibição ("seg, 6 jul")
 let horaSel = null;
 
 const params = new URLSearchParams(window.location.search);
 const psiId = params.get('id');
 
-const horariosDisponiveis = ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'];
+function horariosPorPeriodo(disponibilidade) {
+  const periodos = {
+    manha: ['08:00', '09:00', '10:00', '11:00'],
+    tarde: ['13:00', '14:00', '15:00', '16:00', '17:00'],
+    noite: ['18:00', '19:00', '20:00']
+  };
+  return periodos[disponibilidade] || ['08:00', '09:00', '10:00', '14:00', '15:00', '16:00', '17:00', '19:00', '20:00'];
+}
 
 // Demo data fallback
 const demoData = {
@@ -409,12 +417,10 @@ function renderizarPerfil(p) {
 
   const diasHtml = dias.map((d, i) => {
     const labels = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    return `<button class="dia-btn" data-date="${d.toISOString()}" data-idx="${i}" onclick="selecionarDia(this, '${formatarData(d)}')">${labels[d.getDay()]}<br><strong>${d.getDate()}</strong></button>`;
+    const isoData = d.toISOString().slice(0, 10);
+    return `<button class="dia-btn" data-idx="${i}" onclick="selecionarDia(this, '${isoData}', '${formatarData(d)}')">${labels[d.getDay()]}<br><strong>${d.getDate()}</strong></button>`;
   }).join('');
 
-  const horariosHtml = horariosDisponiveis.map(h =>
-    `<button class="hora-btn" onclick="selecionarHora(this, '${h}')">${h}</button>`
-  ).join('');
 
   document.title = `Mind — ${p.nome}`;
 
@@ -531,7 +537,7 @@ function renderizarPerfil(p) {
             </div>
 
             <div class="agenda-label">Horário disponível</div>
-            <div class="horarios">${horariosHtml}</div>
+            <div class="horarios" id="horarios-container"><p style="color:var(--muted);font-size:13px;grid-column:1/-1">Selecione uma data para ver os horários livres.</p></div>
 
             <button class="btn-agendar" id="btnAgendar" onclick="abrirModal()" disabled>
               Selecione data e horário
@@ -546,10 +552,60 @@ function renderizarPerfil(p) {
   verificarPodeAvaliar();
 }
 
-function selecionarDia(el, texto) {
+async function buscarSlotsOcupados(psicologoId, dataISO) {
+  // Perfis de demonstração não existem no banco — não há o que consultar.
+  if (!psicologoId || psicologoId.toString().startsWith('demo-')) return new Set();
+
+  const inicio = dataISO + 'T00:00:00';
+  const fim = dataISO + 'T23:59:59';
+
+  const [{ data: ag }, { data: ss }] = await Promise.all([
+    db.from('agendamentos').select('data_hora').eq('psicologo_id', psicologoId).in('status', ['pendente', 'aceito']).gte('data_hora', inicio).lte('data_hora', fim),
+    db.from('sessoes').select('data_hora').eq('psicologo_id', psicologoId).in('status', ['agendada', 'realizada']).gte('data_hora', inicio).lte('data_hora', fim)
+  ]);
+
+  const ocupados = new Set();
+  (ag || []).forEach(a => ocupados.add(new Date(a.data_hora).toTimeString().slice(0, 5)));
+  (ss || []).forEach(s => ocupados.add(new Date(s.data_hora).toTimeString().slice(0, 5)));
+  return ocupados;
+}
+
+async function atualizarHorarios(dataISO) {
+  const cont = document.getElementById('horarios-container');
+  cont.innerHTML = '<p style="color:var(--muted);font-size:13px;grid-column:1/-1">Verificando horários livres...</p>';
+
+  const candidatos = horariosPorPeriodo(psicologo.disponibilidade);
+  const ocupados = await buscarSlotsOcupados(psicologo.id, dataISO);
+
+  const agora = new Date();
+  const ehHoje = dataISO === agora.toISOString().slice(0, 10);
+
+  const livres = candidatos.filter(h => {
+    if (ocupados.has(h)) return false;
+    if (ehHoje) {
+      const [hh, mm] = h.split(':').map(Number);
+      const horarioDate = new Date(agora);
+      horarioDate.setHours(hh, mm, 0, 0);
+      if (horarioDate.getTime() <= agora.getTime() + 60 * 60 * 1000) return false; // mínimo 1h de antecedência
+    }
+    return true;
+  });
+
+  if (!livres.length) {
+    cont.innerHTML = '<p style="color:var(--muted);font-size:13px;grid-column:1/-1">Sem horários livres neste dia — escolha outra data.</p>';
+    return;
+  }
+
+  cont.innerHTML = livres.map(h => `<button class="hora-btn" onclick="selecionarHora(this, '${h}')">${h}</button>`).join('');
+}
+
+function selecionarDia(el, isoData, texto) {
   document.querySelectorAll('.dia-btn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
-  diaSel = texto;
+  diaSel = isoData;
+  diaSelTexto = texto;
+  horaSel = null;
+  atualizarHorarios(isoData);
   verificarBotao();
 }
 
@@ -564,13 +620,16 @@ function verificarBotao() {
   const btn = document.getElementById('btnAgendar');
   if (diaSel && horaSel) {
     btn.disabled = false;
-    btn.textContent = `Agendar para ${diaSel} às ${horaSel}`;
+    btn.textContent = `Agendar para ${diaSelTexto} às ${horaSel}`;
+  } else {
+    btn.disabled = true;
+    btn.textContent = 'Selecione data e horário';
   }
 }
 
 function abrirModal() {
   document.getElementById('modal-nome').textContent = psicologo?.nome || 'este profissional';
-  document.getElementById('modal-dia').textContent = diaSel;
+  document.getElementById('modal-dia').textContent = diaSelTexto;
   document.getElementById('modal-hora').textContent = horaSel;
   document.getElementById('overlay').classList.add('aberto');
 }
@@ -616,22 +675,34 @@ async function confirmarAgendamento() {
     paciente = novoPaciente;
   }
 
+  // Revalida disponibilidade no instante da confirmação — evita que dois
+  // pacientes reservem o mesmo horário na janela entre abrir e confirmar o modal.
+  const ocupadosAgora = await buscarSlotsOcupados(psicologo.id, diaSel);
+  if (ocupadosAgora.has(horaSel)) {
+    fecharModal();
+    alert('Esse horário acabou de ser reservado por outra pessoa. Escolha outro, por favor.');
+    atualizarHorarios(diaSel);
+    return;
+  }
+
+  const dataHoraISO = `${diaSel}T${horaSel}:00`;
+
   // Salvar agendamento (se a tabela agendamentos existir)
   const { error } = await db.from('agendamentos').insert({
     paciente_id: paciente.id,
     psicologo_id: psicologo.id,
-    data_hora: diaSel + ' ' + horaSel,
+    data_hora: dataHoraISO,
     status: 'pendente',
   });
 
   fecharModal();
 
   if (error) {
-    // Tabela ainda não existe — só confirma visualmente
-    mostrarSucesso();
-  } else {
-    mostrarSucesso();
+    alert('Não foi possível concluir o agendamento: ' + error.message);
+    return;
   }
+
+  mostrarSucesso();
 }
 
 function mostrarSucesso() {
@@ -641,7 +712,7 @@ function mostrarSucesso() {
         <svg width="28" height="28" fill="none" stroke="#5B8C6E" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
       </div>
       <h3>Agendamento solicitado!</h3>
-      <p>Sua sessão com <strong>${psicologo?.nome}</strong> foi solicitada para <strong>${diaSel}</strong> às <strong>${horaSel}</strong>. O psicólogo entrará em contato para confirmar.</p>
+      <p>Sua sessão com <strong>${psicologo?.nome}</strong> foi solicitada para <strong>${diaSelTexto}</strong> às <strong>${horaSel}</strong>. O psicólogo entrará em contato para confirmar.</p>
       <button class="modal-btn-prim" style="width:100%;margin-top:8px" onclick="window.location.href='dashboard-paciente.html'">Ir para meu painel</button>
     </div>
   `;
