@@ -714,6 +714,18 @@
     .tech-grid { grid-template-columns: 1fr; }
     .impact-grid { grid-template-columns: 1fr 1fr; }
     .nav-links { display: none; }
+    .nav-hamburger { display: block; }
+    .nav-links.aberto {
+      display: flex; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: white; flex-direction: column; padding: 24px; gap: 0; z-index: 150;
+      overflow-y: auto;
+    }
+    .nav-links.aberto li { border-bottom: 1px solid #eee; }
+    .nav-links.aberto a { display: block; padding: 16px 4px; }
+  }
+
+  .nav-hamburger {
+    display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--navy, #2D4A6B);
   }
 
   @media (max-width: 580px) {
@@ -890,7 +902,7 @@
 <!-- NAV -->
 <nav id="nav">
   <a href="#" class="nav-logo"><span>Mind</span></a>
-  <ul class="nav-links">
+  <ul class="nav-links" id="navLinks">
     <li><a href="#problema">Problema</a></li>
     <li><a href="#como-funciona">Como funciona</a></li>
     <li><a href="psicologos.html">Psicólogos</a></li>
@@ -898,6 +910,7 @@
     <li><a href="#pitch" class="nav-cta">Conheça o projeto</a></li>
   </ul>
   <button class="nav-entrar" onclick="abrirLogin()">Entrar</button>
+  <button class="nav-hamburger" id="navHamburger" onclick="toggleMenuMobile()" aria-label="Abrir menu">☰</button>
 </nav>
 
 <!-- HERO -->
@@ -1346,6 +1359,13 @@ db.auth.getSession().then(({ data }) => {
   if (data.session) redirecionarPorPerfil(data.session.user);
 });
 
+function toggleMenuMobile() {
+  document.getElementById('navLinks').classList.toggle('aberto');
+}
+document.querySelectorAll('#navLinks a').forEach(a => a.addEventListener('click', () => {
+  document.getElementById('navLinks').classList.remove('aberto');
+}));
+
 function abrirLogin() {
   document.getElementById('modalOverlay').classList.add('aberto');
   setTimeout(() => document.getElementById('m-email').focus(), 100);
@@ -1409,7 +1429,7 @@ async function fazerLogin() {
   let lista = demoFaixa;
 
   try {
-    const { data } = await db.from('psicologos').select('id, nome, crp, abordagem, foto_url').limit(20);
+    const { data } = await db.from('psicologos_publico').select('id, nome, crp, abordagem, foto_url').limit(20);
     if (data && data.length > 0) lista = data;
   } catch(e) {}
 

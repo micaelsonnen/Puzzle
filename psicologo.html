@@ -711,8 +711,8 @@ async function carregar() {
   }
 
   const { data, error } = await db
-    .from('psicologos')
-    .select('id, nome, crp, abordagem, email, foto_url, especialidades, temas, disponibilidade, bio, sobre_mim, formacao, pos_graduacao')
+    .from('psicologos_publico')
+    .select('id, nome, crp, abordagem, foto_url, especialidades, temas, disponibilidade, bio, sobre_mim, formacao, pos_graduacao')
     .eq('id', psiId)
     .maybeSingle();
 
