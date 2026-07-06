@@ -69,6 +69,11 @@ As migrações estão na raiz do repo (`migration_*.sql`) e devem ser rodadas
 **nesta ordem** no SQL Editor do Supabase, pois migrações posteriores
 dependem de colunas/tabelas criadas pelas anteriores:
 
+0. **`migration_0_schema_base.sql`** — roda primeiro, sempre. Garante que
+   colunas que o front-end sempre assumiu existir (ex.: `psicologos.abordagem`,
+   `psicologos.bio`, `psicologos.disponibilidade`) realmente existem no banco.
+   Sem isso, as migrações seguintes (que criam views referenciando essas
+   colunas) falham com erro `column "..." does not exist`.
 1. `migration_prontuario_inteligente.sql` — anamnese, hipótese diagnóstica
    (com histórico), intercorrências, extensão de `sintomas`
 2. `migration_cadastro_psicologo.sql` — onboarding completo do psicólogo
@@ -76,9 +81,9 @@ dependem de colunas/tabelas criadas pelas anteriores:
 3. `migration_plano_psicologo.sql` — assinatura/mensalidade da plataforma
 4. `migration_avaliacoes.sql` — avaliações públicas de pacientes sobre psicólogos
 5. **`migration_seguranca_critica.sql`** — **rodar sempre por último**, e
-   novamente sempre que uma tabela nova for criada. Habilita Row Level
-   Security em todas as tabelas e cria as views anonimizadas usadas pelas
-   telas públicas e pela empresa.
+   novamente sempre que uma tabela ou coluna nova for criada. Habilita Row
+   Level Security em todas as tabelas e cria as views anonimizadas usadas
+   pelas telas públicas e pela empresa.
 
 Todas as migrações são seguras para rodar mais de uma vez (`if not exists` /
 `drop policy if exists` antes de recriar).
