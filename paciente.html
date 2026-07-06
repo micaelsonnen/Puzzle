@@ -166,6 +166,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
           <select id="ic-gravidade"><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="grave">Grave</option></select>
         </div>
         <div class="form-group"><label>Descrição</label><textarea id="ic-descricao" rows="2" placeholder="Ex: crise de ansiedade fora da sessão, mudança de emprego, luto..."></textarea></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="ic-visivel" style="width:auto">
+          <label style="margin:0;text-transform:none;font-size:13px;color:var(--text)" for="ic-visivel">Compartilhar este registro com o paciente na linha do tempo dele</label>
+        </div>
         <button class="save-btn" onclick="salvarIntercorrencia()">Salvar intercorrência</button>
       </div>
       <div id="lista-timeline" style="margin-top:18px"><div class="loading">Carregando...</div></div>
@@ -212,6 +216,27 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
       <div id="hipotese-historico" style="margin-top:16px"></div>
     </div>
     <div class="card" id="dados-anamnese"><div class="loading">Carregando...</div></div>
+    <div class="card" id="form-anamnese-card" style="display:none">
+      <h3>✏️ Editar anamnese</h3>
+      <div class="form-group-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="form-group"><label>Data de nascimento</label><input type="date" id="an-nascimento" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px"></div>
+        <div class="form-group"><label>Telefone</label><input type="text" id="an-telefone" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px"></div>
+      </div>
+      <div class="form-group-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="form-group"><label>Estado civil</label><input type="text" id="an-estado-civil" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px"></div>
+        <div class="form-group"><label>Profissão</label><input type="text" id="an-profissao" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px"></div>
+      </div>
+      <div class="form-group"><label>Queixa principal</label><textarea id="an-queixa" rows="2"></textarea></div>
+      <div class="form-group"><label>História clínica</label><textarea id="an-clinica" rows="3"></textarea></div>
+      <div class="form-group"><label>História familiar</label><textarea id="an-familiar" rows="3"></textarea></div>
+      <div class="form-group"><label>História laboral</label><textarea id="an-laboral" rows="3"></textarea></div>
+      <div class="form-group"><label>Rede de apoio</label><textarea id="an-rede" rows="2"></textarea></div>
+      <div class="form-group"><label>Objetivos terapêuticos</label><textarea id="an-objetivos" rows="2"></textarea></div>
+      <div class="actions" style="display:flex;justify-content:flex-end;gap:12px">
+        <button class="btn-secundario" onclick="cancelarEdicaoAnamnese()">Cancelar</button>
+        <button class="save-btn" style="width:auto" onclick="salvarAnamnese()">Salvar anamnese</button>
+      </div>
+    </div>
   </div>
 
   <!-- FINANCEIRO -->
@@ -340,16 +365,26 @@ function renderEvolucao(sessoes) {
   });
 }
 
+let anamneseAtual = null;
+
 async function carregarAnamnese() {
   const el = document.getElementById('dados-anamnese');
   const { data: anamnese } = await db.from('anamneses').select('*').eq('paciente_id', pacienteId).order('criado_em', { ascending: false }).limit(1).maybeSingle();
+  anamneseAtual = anamnese || null;
 
   if (!anamnese) {
-    el.innerHTML = `<h3>📋 Dados da anamnese</h3><p style="color:var(--muted);font-size:14px">Nenhuma anamnese registrada para este paciente ainda.</p>`;
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">📋 Dados da anamnese</h3>
+        <button class="btn-secundario" onclick="editarAnamnese()">+ Criar anamnese</button>
+      </div>
+      <p style="color:var(--muted);font-size:14px">Nenhuma anamnese registrada para este paciente ainda.</p>`;
     return;
   }
 
-  el.innerHTML = `<h3>📋 Dados da anamnese</h3>
+  el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0">📋 Dados da anamnese</h3>
+      <button class="btn-secundario" onclick="editarAnamnese()">✏️ Editar</button>
+    </div>
     <div class="field-row">
       <div class="field"><label>Nome</label><p>${paciente.nome || '—'}</p></div>
       <div class="field"><label>Data de nascimento</label><p>${anamnese.data_nascimento ? new Date(anamnese.data_nascimento).toLocaleDateString('pt-BR') : '—'}</p></div>
@@ -364,6 +399,57 @@ async function carregarAnamnese() {
     <div class="field" style="margin-top:16px"><label>História laboral</label><p>${anamnese.historia_laboral || '—'}</p></div>
     <div class="field" style="margin-top:16px"><label>Rede de apoio</label><p>${anamnese.rede_apoio || '—'}</p></div>
     <div class="field" style="margin-top:16px"><label>Objetivos terapêuticos</label><p>${anamnese.objetivos_terapeuticos || '—'}</p></div>`;
+}
+
+function editarAnamnese() {
+  const a = anamneseAtual || {};
+  document.getElementById('an-nascimento').value = a.data_nascimento || '';
+  document.getElementById('an-telefone').value = a.telefone || '';
+  document.getElementById('an-estado-civil').value = a.estado_civil || '';
+  document.getElementById('an-profissao').value = a.profissao || '';
+  document.getElementById('an-queixa').value = a.queixa_principal || '';
+  document.getElementById('an-clinica').value = a.historia_clinica || '';
+  document.getElementById('an-familiar').value = a.historia_familiar || '';
+  document.getElementById('an-laboral').value = a.historia_laboral || '';
+  document.getElementById('an-rede').value = a.rede_apoio || '';
+  document.getElementById('an-objetivos').value = a.objetivos_terapeuticos || '';
+
+  document.getElementById('dados-anamnese').style.display = 'none';
+  document.getElementById('form-anamnese-card').style.display = 'block';
+}
+
+function cancelarEdicaoAnamnese() {
+  document.getElementById('form-anamnese-card').style.display = 'none';
+  document.getElementById('dados-anamnese').style.display = 'block';
+}
+
+async function salvarAnamnese() {
+  const payload = {
+    data_nascimento: document.getElementById('an-nascimento').value || null,
+    telefone: document.getElementById('an-telefone').value.trim(),
+    estado_civil: document.getElementById('an-estado-civil').value.trim(),
+    profissao: document.getElementById('an-profissao').value.trim(),
+    queixa_principal: document.getElementById('an-queixa').value.trim(),
+    historia_clinica: document.getElementById('an-clinica').value.trim(),
+    historia_familiar: document.getElementById('an-familiar').value.trim(),
+    historia_laboral: document.getElementById('an-laboral').value.trim(),
+    rede_apoio: document.getElementById('an-rede').value.trim(),
+    objetivos_terapeuticos: document.getElementById('an-objetivos').value.trim(),
+    atualizado_em: new Date().toISOString()
+  };
+
+  let error;
+  if (anamneseAtual?.id) {
+    ({ error } = await db.from('anamneses').update(payload).eq('id', anamneseAtual.id));
+  } else {
+    ({ error } = await db.from('anamneses').insert({ ...payload, paciente_id: pacienteId, psicologo_id: paciente.psicologo_id }));
+  }
+
+  if (error) { alert('Erro ao salvar anamnese: ' + error.message); return; }
+
+  document.getElementById('form-anamnese-card').style.display = 'none';
+  document.getElementById('dados-anamnese').style.display = 'block';
+  carregarAnamnese();
 }
 
 /* ---------------- HIPÓTESE DIAGNÓSTICA ---------------- */
@@ -440,17 +526,19 @@ async function salvarIntercorrencia() {
   const data = document.getElementById('ic-data').value || new Date().toISOString().slice(0, 10);
   const gravidade = document.getElementById('ic-gravidade').value;
   const descricao = document.getElementById('ic-descricao').value.trim();
+  const visivel_paciente = document.getElementById('ic-visivel').checked;
   if (!descricao) { alert('Descreva a intercorrência.'); return; }
 
   const { error } = await db.from('intercorrencias').insert({
     paciente_id: pacienteId,
     psicologo_id: paciente.psicologo_id,
-    data, gravidade, descricao
+    data, gravidade, descricao, visivel_paciente
   });
 
   if (error) { alert('Erro ao registrar intercorrência: ' + error.message); return; }
 
   document.getElementById('ic-descricao').value = '';
+  document.getElementById('ic-visivel').checked = false;
   document.getElementById('form-intercorrencia').classList.remove('open');
   carregarLinhaDoTempo();
 }
@@ -483,7 +571,7 @@ async function carregarLinhaDoTempo() {
 
   (intercorrencias || []).forEach(i => eventos.push({
     tipo: `intercorrência ${i.gravidade || 'leve'}`, dotClass: 'intercorrencia-' + (i.gravidade || 'leve'), data: i.data,
-    titulo: 'Intercorrência',
+    titulo: 'Intercorrência' + (i.visivel_paciente ? ' <span class="badge ok" style="font-weight:600">visível ao paciente</span>' : ' <span class="badge alerta" style="font-weight:600">nota interna</span>'),
     desc: i.descricao
   }));
 

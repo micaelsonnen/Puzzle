@@ -410,7 +410,7 @@ async function carregarLinhaDoTempoPaciente() {
   const [{ data: sessoes }, { data: hipoteses }, { data: intercorrencias }] = await Promise.all([
     db.from('sessoes').select('data_hora, resumo_sessao').eq('paciente_id', pacienteData.id).eq('status', 'realizada'),
     db.from('hipoteses_diagnosticas').select('cid, descricao, criado_em, ativa').eq('paciente_id', pacienteData.id),
-    db.from('intercorrencias').select('data, descricao, gravidade').eq('paciente_id', pacienteData.id)
+    db.from('intercorrencias').select('data, descricao, gravidade').eq('paciente_id', pacienteData.id).eq('visivel_paciente', true)
   ]);
 
   const eventos = [];
