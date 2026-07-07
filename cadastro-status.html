@@ -36,6 +36,11 @@ const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const CONTEUDO = {
   incompleto: {
     icon: '📝',
@@ -67,7 +72,7 @@ async function init() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) { window.location.href = 'login.html'; return; }
 
-  const { data: psi } = await db.from('psicologos').select('status_cadastro').eq('email', session.user.email).maybeSingle();
+  const { data: psi } = await db.from('psicologos').select('status_cadastro, motivo_recusa').eq('email', session.user.email).maybeSingle();
   const status = psi?.status_cadastro || 'incompleto';
   const info = CONTEUDO[status] || CONTEUDO.incompleto;
 
@@ -76,6 +81,7 @@ async function init() {
     <h2>${info.titulo}</h2>
     <span class="status-badge ${status}">${status.replace('_', ' ')}</span>
     <p>${info.texto}</p>
+    ${status === 'rejeitado' && psi?.motivo_recusa ? `<p style="background:var(--surface2);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:var(--text)"><strong>Motivo:</strong> ${escapeHtml(psi.motivo_recusa)}</p>` : ''}
     ${info.botao ? `<a class="btn" href="${info.botao.href}">${info.botao.texto}</a>` : ''}
     <a class="back" href="index.html">← Voltar para o início</a>
   `;

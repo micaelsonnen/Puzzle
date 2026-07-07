@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mind — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F7F4EF; --surface: #FFFFFF; --surface2: #f0ece6; --border: #E2DED8;
+  --navy: #2D4A6B; --sage: #5B8C6E; --text: #1A2332; --muted: #6B7A8D;
+  --success: #5B8C6E; --warning: #b45309; --error: #b91c1c;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+header .logo { font-weight: 800; font-size: 18px; color: var(--navy); }
+header .quem { font-size: 13px; color: var(--muted); }
+.wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+h1 { font-size: 22px; margin-bottom: 6px; }
+.sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+.nome { font-size: 16px; font-weight: 700; }
+.meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.docs { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.doc-link { font-size: 13px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--navy); font-weight: 600; }
+.doc-link.indisponivel { color: var(--muted); cursor: default; }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn { border: none; padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-aprovar { background: var(--success); color: white; }
+.btn-recusar { background: none; border: 1.5px solid var(--error); color: var(--error); }
+.motivo-input { flex: 1; min-width: 200px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; }
+.empty { text-align: center; color: var(--muted); padding: 60px 20px; }
+.loading { text-align: center; color: var(--muted); padding: 40px; }
+.negado { text-align: center; padding: 100px 20px; color: var(--muted); }
+.badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+.badge.em_analise { background: rgba(180,83,9,0.12); color: var(--warning); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Mind — Admin</div>
+  <div class="quem" id="quem-esta"></div>
+</header>
+
+<div class="wrap" id="conteudo">
+  <div class="loading">Verificando acesso...</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  document.getElementById('quem-esta').textContent = session.user.email;
+
+  // Checagem de acesso no front-end é só conveniência de UX — a
+  // segurança de verdade está nas policies de RLS (só o e-mail admin
+  // consegue de fato ler/editar as linhas de `psicologos`). Mesmo que
+  // alguém burle esta tela, o Supabase nega a consulta.
+  const { data: pendentes, error } = await db.from('psicologos')
+    .select('id, nome, email, crp, uf_crp, celular, formacao, crp_doc_url, diploma_doc_url, certidao_doc_url, status_cadastro, criado_em')
+    .eq('status_cadastro', 'em_analise');
+
+  if (error) {
+    document.getElementById('conteudo').innerHTML = `<div class="negado">🔒 Acesso negado. Esta conta não tem permissão de administrador.</div>`;
+    return;
+  }
+
+  renderizar(pendentes || []);
+}
+
+async function urlAssinada(path) {
+  if (!path) return null;
+  const { data, error } = await db.storage.from('psicologos-documentos').createSignedUrl(path, 300); // 5 minutos
+  if (error) return null;
+  return data.signedUrl;
+}
+
+function renderizar(lista) {
+  const el = document.getElementById('conteudo');
+
+  if (!lista.length) {
+    el.innerHTML = `<h1>Aprovação de psicólogos</h1><p class="sub">Cadastros aguardando análise.</p><div class="empty">✅ Nenhum cadastro pendente no momento.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<h1>Aprovação de psicólogos</h1><p class="sub">${lista.length} cadastro(s) aguardando análise.</p>` +
+    lista.map(p => `
+      <div class="card" id="card-${p.id}">
+        <div class="card-header">
+          <div>
+            <div class="nome">${escapeHtml(p.nome)}</div>
+            <div class="meta">${escapeHtml(p.email)} · CRP ${escapeHtml(p.crp)}/${escapeHtml(p.uf_crp)} · ${escapeHtml(p.celular) || 'sem telefone'}</div>
+            <div class="meta">${escapeHtml(p.formacao) || 'formação não informada'}</div>
+          </div>
+          <span class="badge em_analise">Em análise</span>
+        </div>
+        <div class="docs" id="docs-${p.id}"><span class="meta">Carregando documentos...</span></div>
+        <div class="actions">
+          <button class="btn btn-aprovar" onclick="aprovar('${p.id}')">Aprovar</button>
+          <input type="text" class="motivo-input" id="motivo-${p.id}" placeholder="Motivo da recusa (opcional)">
+          <button class="btn btn-recusar" onclick="recusar('${p.id}')">Recusar</button>
+        </div>
+      </div>
+    `).join('');
+
+  lista.forEach(carregarDocs);
+}
+
+async function carregarDocs(p) {
+  const el = document.getElementById('docs-' + p.id);
+  const [crpUrl, diplomaUrl, certidaoUrl] = await Promise.all([
+    urlAssinada(p.crp_doc_url), urlAssinada(p.diploma_doc_url), urlAssinada(p.certidao_doc_url)
+  ]);
+
+  const link = (url, label) => url
+    ? `<a class="doc-link" href="${url}" target="_blank" rel="noopener">📄 ${label}</a>`
+    : `<span class="doc-link indisponivel">📄 ${label} (não enviado)</span>`;
+
+  el.innerHTML = link(crpUrl, 'Carteira CRP') + link(diplomaUrl, 'Diploma') + link(certidaoUrl, 'Certidão');
+}
+
+async function aprovar(id) {
+  const { error } = await db.from('psicologos').update({ status_cadastro: 'aprovado', motivo_recusa: null }).eq('id', id);
+  if (error) { alert('Erro ao aprovar: ' + error.message); return; }
+  document.getElementById('card-' + id).remove();
+}
+
+async function recusar(id) {
+  const motivo = document.getElementById('motivo-' + id).value.trim();
+  const { error } = await db.from('psicologos').update({ status_cadastro: 'rejeitado', motivo_recusa: motivo || null }).eq('id', id);
+  if (error) { alert('Erro ao recusar: ' + error.message); return; }
+  document.getElementById('card-' + id).remove();
+}
+
+init();
+</script>
+</body>
+</html>
