@@ -358,6 +358,11 @@
 </div>
 
 <script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -409,8 +414,8 @@ function renderizarPerfil(p) {
   psicologo = p;
   const dias = gerarDias();
   const nomeIniciais = inicialStr(p.nome);
-  const espTags = (p.especialidades || []).map(e => `<span class="tag-esp">${e}</span>`).join('');
-  const temasTags = (p.temas || []).map(t => `<span class="tag-esp">${t}</span>`).join('');
+  const espTags = (p.especialidades || []).map(e => `<span class="tag-esp">${escapeHtml(e)}</span>`).join('');
+  const temasTags = (p.temas || []).map(t => `<span class="tag-esp">${escapeHtml(t)}</span>`).join('');
   const avaliacoes = window._avaliacoesAtuais || [];
   const mediaAvaliacoes = avaliacoes.length ? avaliacoes.reduce((s, a) => s + a.nota, 0) / avaliacoes.length : 0;
   const dispTexto = { manha:'Manhã (8h–12h)', tarde:'Tarde (13h–18h)', noite:'Noite (18h–21h)' }[p.disponibilidade] || 'Sob consulta';
@@ -422,18 +427,18 @@ function renderizarPerfil(p) {
   }).join('');
 
 
-  document.title = `Mind — ${p.nome}`;
+  document.title = `Mind — ${escapeHtml(p.nome)}`;
 
   document.getElementById('conteudo').innerHTML = `
     <div class="perfil-hero">
       <div class="perfil-hero-inner">
-        <div class="perfil-avatar">${p.foto_url ? `<img src="${p.foto_url}" alt="${p.nome}">` : nomeIniciais}</div>
+        <div class="perfil-avatar">${p.foto_url ? `<img src="${escapeHtml(p.foto_url)}" alt="${escapeHtml(p.nome)}">` : nomeIniciais}</div>
         <div class="perfil-info">
           <div class="perfil-tag">Psicólogo(a) verificado(a)</div>
-          <div class="perfil-nome">${p.nome}</div>
-          <div class="perfil-crp">${p.crp || ''}</div>
+          <div class="perfil-nome">${escapeHtml(p.nome)}</div>
+          <div class="perfil-crp">${escapeHtml(p.crp) || ''}</div>
           <div class="perfil-badges">
-            <span class="badge badge-abord">${p.abordagem || 'Abordagem integrada'}</span>
+            <span class="badge badge-abord">${escapeHtml(p.abordagem) || 'Abordagem integrada'}</span>
             <span class="badge badge-disp">🕐 ${dispTexto}</span>
           </div>
           <div class="rating-summary">
@@ -449,7 +454,7 @@ function renderizarPerfil(p) {
       <div class="perfil-col">
         <div class="card">
           <div class="card-title">Sobre</div>
-          <p class="bio-text">${p.sobre_mim || p.bio || 'Profissional dedicado ao cuidado da saúde mental com abordagem humanizada e ética.'}</p>
+          <p class="bio-text">${escapeHtml(p.sobre_mim || p.bio) || 'Profissional dedicado ao cuidado da saúde mental com abordagem humanizada e ética.'}</p>
         </div>
 
         <div class="card">
@@ -473,7 +478,7 @@ function renderizarPerfil(p) {
               </div>
               <div>
                 <div class="info-label">Graduação</div>
-                <div class="info-value">${p.formacao || 'Psicologia — informação não disponível'}</div>
+                <div class="info-value">${escapeHtml(p.formacao) || 'Psicologia — informação não disponível'}</div>
               </div>
             </div>
             ${p.pos_graduacao ? `<div class="info-item">
@@ -484,7 +489,7 @@ function renderizarPerfil(p) {
               </div>
               <div>
                 <div class="info-label">Pós-graduação / Formação adicional</div>
-                <div class="info-value">${p.pos_graduacao}</div>
+                <div class="info-value">${escapeHtml(p.pos_graduacao)}</div>
               </div>
             </div>` : ''}
             <div class="info-item">
@@ -495,7 +500,7 @@ function renderizarPerfil(p) {
               </div>
               <div>
                 <div class="info-label">Registro</div>
-                <div class="info-value">${p.crp || 'CRP — verificado'}</div>
+                <div class="info-value">${escapeHtml(p.crp) || 'CRP — verificado'}</div>
               </div>
             </div>
           </div>
@@ -510,7 +515,7 @@ function renderizarPerfil(p) {
                   <span class="review-stars">${renderEstrelas(a.nota)}</span>
                   <span class="review-data">${new Date(a.criado_em).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
                 </div>
-                ${a.comentario ? `<p class="review-texto">${a.comentario}</p>` : ''}
+                ${a.comentario ? `<p class="review-texto">${escapeHtml(a.comentario)}</p>` : ''}
               </div>
             `).join('') : '<p class="sem-avaliacoes">Ainda não há avaliações públicas para este profissional.</p>'}
           </div>
@@ -712,7 +717,7 @@ function mostrarSucesso() {
         <svg width="28" height="28" fill="none" stroke="#5B8C6E" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
       </div>
       <h3>Agendamento solicitado!</h3>
-      <p>Sua sessão com <strong>${psicologo?.nome}</strong> foi solicitada para <strong>${diaSelTexto}</strong> às <strong>${horaSel}</strong>. O psicólogo entrará em contato para confirmar.</p>
+      <p>Sua sessão com <strong>${escapeHtml(psicologo?.nome)}</strong> foi solicitada para <strong>${escapeHtml(diaSelTexto)}</strong> às <strong>${escapeHtml(horaSel)}</strong>. O psicólogo entrará em contato para confirmar.</p>
       <button class="modal-btn-prim" style="width:100%;margin-top:8px" onclick="window.location.href='dashboard-paciente.html'">Ir para meu painel</button>
     </div>
   `;

@@ -210,6 +210,11 @@ tbody tr:last-child td { border-bottom: none; }
 </div>
 
 <script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -282,7 +287,7 @@ async function carregarHoje() {
     const [cls, label] = statusMap[s.status] || ['alerta', s.status];
     return `<div class="agenda-item">
       <span class="hora">${hora}</span>
-      <div class="agenda-info"><div class="nome">${s.pacientes?.nome || '—'}</div></div>
+      <div class="agenda-info"><div class="nome">${escapeHtml(s.pacientes?.nome) || '—'}</div></div>
       <span class="badge ${cls}">${label}</span>
     </div>`;
   }).join('');
@@ -321,8 +326,8 @@ async function carregarAlertas() {
     <div class="agenda-item">
       <span class="nav-icon">${a.icon}</span>
       <div class="agenda-info">
-        <div class="nome">${a.nome}</div>
-        <div class="detalhe">${a.detalhe}</div>
+        <div class="nome">${escapeHtml(a.nome)}</div>
+        <div class="detalhe">${escapeHtml(a.detalhe)}</div>
       </div>
     </div>`).join('');
 }
@@ -364,7 +369,7 @@ async function carregarPacientes() {
     <thead><tr><th>Nome</th><th>Hipótese diagnóstica</th><th>Sessões</th><th>Status</th><th>Ação</th></tr></thead>
     <tbody>${data.map(p => `
       <tr>
-        <td><strong>${p.nome}</strong></td>
+        <td><strong>${escapeHtml(p.nome)}</strong></td>
         <td>${cidPorPaciente[p.id] || p.diagnostico_cid || '—'}</td>
         <td>${p.total_sessoes || 0}</td>
         <td><span class="badge ${p.status === 'ativo' ? 'ok' : 'falta'}">${p.status}</span></td>
@@ -385,7 +390,7 @@ async function carregarSolicitacoes() {
     return `<div class="agenda-item">
       <span class="hora" style="min-width:90px">${data_fmt}</span>
       <span class="hora">${hora}</span>
-      <div class="agenda-info"><div class="nome">${a.pacientes?.nome || '—'}</div></div>
+      <div class="agenda-info"><div class="nome">${escapeHtml(a.pacientes?.nome) || '—'}</div></div>
       <div style="display:flex;gap:8px;margin-left:auto">
         <button class="link" style="color:var(--success);cursor:pointer;border:none;background:none;font-weight:600" onclick="aceitarSolicitacao('${a.id}')">Aceitar</button>
         <button class="link" style="color:var(--error);cursor:pointer;border:none;background:none;font-weight:600" onclick="recusarSolicitacao('${a.id}')">Recusar</button>
@@ -436,7 +441,7 @@ async function carregarAgenda() {
     return `<div class="agenda-item">
       <span class="hora" style="min-width:90px">${data_fmt}</span>
       <span class="hora">${hora}</span>
-      <div class="agenda-info"><div class="nome">${s.pacientes?.nome || '—'}</div></div>
+      <div class="agenda-info"><div class="nome">${escapeHtml(s.pacientes?.nome) || '—'}</div></div>
       <span class="badge ${s.status === 'realizada' ? 'ok' : 'alerta'}">${s.status}</span>
     </div>`;
   }).join('');
@@ -461,7 +466,7 @@ async function carregarFinanceiro() {
     <tbody>${data.slice(0, 20).map(p => `
       <tr>
         <td>${p.data_pagamento ? new Date(p.data_pagamento).toLocaleDateString('pt-BR') : '—'}</td>
-        <td>${p.sessoes?.pacientes?.nome || '—'}</td>
+        <td>${escapeHtml(p.sessoes?.pacientes?.nome) || '—'}</td>
         <td>R$ ${(p.valor_psicologo || 50).toFixed(2)}</td>
         <td><span class="badge ${p.status_pagamento === 'pago' ? 'ok' : 'alerta'}">${p.status_pagamento || 'pendente'}</span></td>
       </tr>`).join('')}

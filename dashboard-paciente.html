@@ -221,6 +221,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 </div>
 
 <script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -283,8 +288,8 @@ async function carregarUltimaSessao() {
   const s = data[0];
   el.innerHTML = `
     <p style="font-size:13px;color:var(--muted);margin-bottom:8px">${new Date(s.data_hora).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</p>
-    ${s.resumo_sessao ? `<p style="font-size:14px;margin-bottom:10px">${s.resumo_sessao}</p>` : ''}
-    ${s.tarefa_casa ? `<div style="background:rgba(52,211,153,0.1);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--success)">📌 Tarefa: ${s.tarefa_casa}</div>` : ''}`;
+    ${s.resumo_sessao ? `<p style="font-size:14px;margin-bottom:10px">${escapeHtml(s.resumo_sessao)}</p>` : ''}
+    ${s.tarefa_casa ? `<div style="background:rgba(52,211,153,0.1);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--success)">📌 Tarefa: ${escapeHtml(s.tarefa_casa)}</div>` : ''}`;
 }
 
 async function carregarProgresso() {
@@ -367,8 +372,8 @@ async function carregarHistSessoes() {
       <div class="sh-data">${new Date(s.data_hora).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
         <span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:10px;background:${s.status === 'realizada' ? 'rgba(52,211,153,0.15)' : 'rgba(251,191,36,0.15)'};color:${s.status === 'realizada' ? '#5B8C6E' : '#b45309'}">${s.status}</span>
       </div>
-      ${s.resumo_sessao ? `<p class="sh-resumo">${s.resumo_sessao}</p>` : ''}
-      ${s.tarefa_casa ? `<p class="sh-tarefa">📌 ${s.tarefa_casa}</p>` : ''}
+      ${s.resumo_sessao ? `<p class="sh-resumo">${escapeHtml(s.resumo_sessao)}</p>` : ''}
+      ${s.tarefa_casa ? `<p class="sh-tarefa">📌 ${escapeHtml(s.tarefa_casa)}</p>` : ''}
     </div>`).join('');
 }
 
@@ -449,7 +454,7 @@ async function carregarLinhaDoTempoPaciente() {
           <span class="tc-data">${e.data ? new Date(e.data).toLocaleDateString('pt-BR') : '—'}</span>
         </div>
         <div class="tc-titulo">${e.titulo}</div>
-        <div class="tc-desc">${e.desc}</div>
+        <div class="tc-desc">${escapeHtml(e.desc)}</div>
       </div>
     </div>`).join('') + `</div>`;
 }

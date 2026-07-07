@@ -255,6 +255,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 </div>
 
 <script>
+// Escapa texto do usuário antes de inserir via innerHTML — evita XSS armazenado
+// (ex: alguém digitar <script> num campo de resumo de sessão ou anamnese).
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -284,11 +291,11 @@ function renderHeader() {
   document.getElementById('patient-header').innerHTML = `
     <div class="patient-avatar">${inicial}</div>
     <div class="patient-info">
-      <h2>${paciente.nome}</h2>
-      <p>${paciente.queixa_principal || 'Sem queixa registrada'}</p>
+      <h2>${escapeHtml(paciente.nome)}</h2>
+      <p>${escapeHtml(paciente.queixa_principal) || 'Sem queixa registrada'}</p>
     </div>
     <div class="patient-meta">
-      <div class="meta-item">CID: <strong>${paciente.diagnostico_cid || '—'}</strong></div>
+      <div class="meta-item">CID: <strong>${escapeHtml(paciente.diagnostico_cid) || '—'}</strong></div>
       <div class="meta-item">Sessões: <strong>${paciente.total_sessoes || 0}</strong></div>
       <div class="meta-item">Início: <strong>${paciente.data_inicio ? new Date(paciente.data_inicio).toLocaleDateString('pt-BR') : '—'}</strong></div>
     </div>`;
@@ -338,8 +345,8 @@ async function carregarSessoes() {
         <span class="badge ${statusCls}">${s.status}</span>
       </div>
       ${sint ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">Ans:${sint.ansiedade} · Sono:${sint.sono} · Humor:${sint.humor} · Trabalho:${sint.funcionamento_ocupacional ?? '—'} · Social:${sint.funcionamento_social ?? '—'} · Adesão:${sint.adesao ?? '—'}</div>` : ''}
-      ${s.resumo_sessao ? `<p class="sessao-resumo">${s.resumo_sessao}</p>` : ''}
-      ${s.tarefa_casa ? `<p style="font-size:12px;color:var(--accent);margin-top:6px">📌 ${s.tarefa_casa}</p>` : ''}
+      ${s.resumo_sessao ? `<p class="sessao-resumo">${escapeHtml(s.resumo_sessao)}</p>` : ''}
+      ${s.tarefa_casa ? `<p style="font-size:12px;color:var(--accent);margin-top:6px">📌 ${escapeHtml(s.tarefa_casa)}</p>` : ''}
     </div>`;
   }).join('');
 
@@ -387,19 +394,19 @@ async function carregarAnamnese() {
       <button class="btn-secundario" onclick="editarAnamnese()">✏️ Editar</button>
     </div>
     <div class="field-row">
-      <div class="field"><label>Nome</label><p>${paciente.nome || '—'}</p></div>
+      <div class="field"><label>Nome</label><p>${escapeHtml(paciente.nome) || '—'}</p></div>
       <div class="field"><label>Data de nascimento</label><p>${anamnese.data_nascimento ? new Date(anamnese.data_nascimento).toLocaleDateString('pt-BR') : '—'}</p></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Telefone</label><p>${anamnese.telefone || '—'}</p></div>
-      <div class="field"><label>Estado civil / Profissão</label><p>${[anamnese.estado_civil, anamnese.profissao].filter(Boolean).join(' · ') || '—'}</p></div>
+      <div class="field"><label>Telefone</label><p>${escapeHtml(anamnese.telefone) || '—'}</p></div>
+      <div class="field"><label>Estado civil / Profissão</label><p>${escapeHtml([anamnese.estado_civil, anamnese.profissao].filter(Boolean).join(' · ')) || '—'}</p></div>
     </div>
-    <div class="field"><label>Queixa principal</label><p>${anamnese.queixa_principal || '—'}</p></div>
-    <div class="field" style="margin-top:16px"><label>História clínica</label><p>${anamnese.historia_clinica || '—'}</p></div>
-    <div class="field" style="margin-top:16px"><label>História familiar</label><p>${anamnese.historia_familiar || '—'}</p></div>
-    <div class="field" style="margin-top:16px"><label>História laboral</label><p>${anamnese.historia_laboral || '—'}</p></div>
-    <div class="field" style="margin-top:16px"><label>Rede de apoio</label><p>${anamnese.rede_apoio || '—'}</p></div>
-    <div class="field" style="margin-top:16px"><label>Objetivos terapêuticos</label><p>${anamnese.objetivos_terapeuticos || '—'}</p></div>`;
+    <div class="field"><label>Queixa principal</label><p>${escapeHtml(anamnese.queixa_principal) || '—'}</p></div>
+    <div class="field" style="margin-top:16px"><label>História clínica</label><p>${escapeHtml(anamnese.historia_clinica) || '—'}</p></div>
+    <div class="field" style="margin-top:16px"><label>História familiar</label><p>${escapeHtml(anamnese.historia_familiar) || '—'}</p></div>
+    <div class="field" style="margin-top:16px"><label>História laboral</label><p>${escapeHtml(anamnese.historia_laboral) || '—'}</p></div>
+    <div class="field" style="margin-top:16px"><label>Rede de apoio</label><p>${escapeHtml(anamnese.rede_apoio) || '—'}</p></div>
+    <div class="field" style="margin-top:16px"><label>Objetivos terapêuticos</label><p>${escapeHtml(anamnese.objetivos_terapeuticos) || '—'}</p></div>`;
 }
 
 function editarAnamnese() {
@@ -474,8 +481,8 @@ async function carregarHipoteses() {
   const atual = data.find(h => h.ativa) || data[0];
   atualEl.innerHTML = `
     <div class="hipotese-atual">
-      <div class="h-cid">${atual.cid || 'Sem CID informado'}</div>
-      ${atual.descricao ? `<div class="h-desc">${atual.descricao}</div>` : ''}
+      <div class="h-cid">${escapeHtml(atual.cid) || 'Sem CID informado'}</div>
+      ${atual.descricao ? `<div class="h-desc">${escapeHtml(atual.descricao)}</div>` : ''}
       <div class="h-desc" style="margin-top:6px">Registrada em ${new Date(atual.criado_em).toLocaleDateString('pt-BR')}</div>
     </div>`;
 
@@ -484,7 +491,7 @@ async function carregarHipoteses() {
     ? `<label style="display:block;font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Histórico de hipóteses anteriores</label>` +
       anteriores.map(h => `
         <div class="hipotese-historico-item">
-          <strong>${h.cid || 'Sem CID'}</strong> — ${h.descricao || 'sem descrição'}
+          <strong>${escapeHtml(h.cid) || 'Sem CID'}</strong> — ${escapeHtml(h.descricao) || 'sem descrição'}
           <span style="float:right">${new Date(h.criado_em).toLocaleDateString('pt-BR')}</span>
         </div>`).join('')
     : '';
@@ -566,7 +573,7 @@ async function carregarLinhaDoTempo() {
 
   (hipoteses || []).forEach(h => eventos.push({
     tipo: 'hipótese diagnóstica', dotClass: 'hipotese', data: h.criado_em,
-    titulo: h.cid ? `Hipótese: ${h.cid}` : 'Hipótese diagnóstica atualizada',
+    titulo: h.cid ? `Hipótese: ${escapeHtml(h.cid)}` : 'Hipótese diagnóstica atualizada',
     desc: h.descricao || (h.ativa ? 'Definida como hipótese ativa' : 'Hipótese substituída')
   }));
 
@@ -592,7 +599,7 @@ async function carregarLinhaDoTempo() {
           <span class="tc-data">${e.data ? new Date(e.data).toLocaleDateString('pt-BR') : '—'}</span>
         </div>
         <div class="tc-titulo">${e.titulo}</div>
-        <div class="tc-desc">${e.desc}</div>
+        <div class="tc-desc">${escapeHtml(e.desc)}</div>
       </div>
     </div>`).join('') + `</div>`;
 }

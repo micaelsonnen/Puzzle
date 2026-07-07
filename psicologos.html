@@ -381,6 +381,11 @@
 </footer>
 
 <script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -464,21 +469,21 @@ function renderizar(lista) {
   grid.innerHTML = lista.map(p => {
     const iniciais = inicialStr(p.nome);
     const valor = `<strong>R$ 50,00/sessão</strong>`;
-    const espTags = (p.especialidades || []).slice(0,3).map(e => `<span class="tag-esp">${e}</span>`).join('');
+    const espTags = (p.especialidades || []).slice(0,3).map(e => `<span class="tag-esp">${escapeHtml(e)}</span>`).join('');
     const notas = mediasAvaliacoes[p.id] || [];
     const media = notas.length ? (notas.reduce((s,n)=>s+n,0) / notas.length) : 0;
     const ratingHtml = notas.length ? `<div style="font-size:0.78rem;color:#b45309;margin-top:2px">★ ${media.toFixed(1)} (${notas.length})</div>` : '';
     return `
     <a href="psicologo.html?id=${p.id}" class="card-psi">
       <div class="card-banner">
-        <div class="card-avatar">${p.foto_url ? `<img src="${p.foto_url}" alt="${p.nome}">` : iniciais}</div>
+        <div class="card-avatar">${p.foto_url ? `<img src="${escapeHtml(p.foto_url)}" alt="${escapeHtml(p.nome)}">` : iniciais}</div>
         <span class="card-badge-online">Disponível</span>
       </div>
       <div class="card-body">
-        <div class="card-nome">${p.nome || 'Psicólogo'}</div>
-        <div class="card-crp">${p.crp || ''}</div>
+        <div class="card-nome">${escapeHtml(p.nome) || 'Psicólogo'}</div>
+        <div class="card-crp">${escapeHtml(p.crp) || ''}</div>
         ${ratingHtml}
-        <span class="card-abordagem">${p.abordagem || 'Abordagem integrada'}</span>
+        <span class="card-abordagem">${escapeHtml(p.abordagem) || 'Abordagem integrada'}</span>
         <div class="card-especialidades">${espTags}</div>
         <div class="card-footer">
           <div class="card-valor">${valor}<span style="font-size:0.75rem">via Mind</span></div>

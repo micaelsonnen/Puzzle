@@ -1354,6 +1354,10 @@
 </div>
 
 <script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1451,10 +1455,10 @@ async function fazerLogin() {
 
   track.innerHTML = loop.map(p => `
     <a href="psicologo.html?id=${p.id}" class="psi-mini-card">
-      <div class="psi-mini-avatar">${p.foto_url ? `<img src="${p.foto_url}" alt="${p.nome}">` : iniciais(p.nome)}</div>
-      <div class="psi-mini-nome">${p.nome || 'Psicólogo'}</div>
-      <div class="psi-mini-crp">${p.crp || ''}</div>
-      <span class="psi-mini-badge">${p.abordagem || 'Integrada'}</span>
+      <div class="psi-mini-avatar">${p.foto_url ? `<img src="${escapeHtml(p.foto_url)}" alt="${escapeHtml(p.nome)}">` : iniciais(p.nome)}</div>
+      <div class="psi-mini-nome">${escapeHtml(p.nome) || 'Psicólogo'}</div>
+      <div class="psi-mini-crp">${escapeHtml(p.crp) || ''}</div>
+      <span class="psi-mini-badge">${escapeHtml(p.abordagem) || 'Integrada'}</span>
     </a>`).join('');
 
   // Auto-scroll suave

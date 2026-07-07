@@ -196,6 +196,11 @@ tbody tr:last-child td { border-bottom: none; }
 </div>
 
 <script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -257,7 +262,7 @@ async function carregarDepts() {
   el.innerHTML = Object.entries(depts).map(([nome, d]) => {
     const pct = Math.round(d.ativos / d.total * 100);
     return `<div class="dept-row">
-      <span class="dept-nome">${nome}</span>
+      <span class="dept-nome">${escapeHtml(nome)}</span>
       <div class="dept-bar"><div class="dept-fill" style="width:${pct}%"></div></div>
       <span class="dept-pct">${pct}%</span>
     </div>`;
@@ -322,7 +327,7 @@ async function carregarEquipe() {
     <tbody>${data.map((p, i) => `
       <tr>
         <td><strong>Colaborador #${String(i + 1).padStart(3, '0')}</strong></td>
-        <td>${p.departamento || '—'}</td>
+        <td>${escapeHtml(p.departamento) || '—'}</td>
         <td>${p.total_sessoes || 0}</td>
         <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, (p.total_sessoes || 0) * 10)}%"></div></div></td>
         <td><span class="badge ${p.status === 'ativo' ? 'ok' : 'inativo'}">${p.status || 'ativo'}</span></td>

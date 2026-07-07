@@ -248,6 +248,11 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 </div>
 
 <script>
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -311,7 +316,7 @@ function renderTags(categoria) {
   tags[categoria].forEach((valor, idx) => {
     const tagEl = document.createElement('span');
     tagEl.className = 'tag';
-    tagEl.innerHTML = `${valor} <button type="button" onclick="removerTag('${categoria}', ${idx})">✕</button>`;
+    tagEl.innerHTML = `${escapeHtml(valor)} <button type="button" onclick="removerTag('${categoria}', ${idx})">✕</button>`;
     wrap.insertBefore(tagEl, input);
   });
 }
