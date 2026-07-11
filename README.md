@@ -1,141 +1,122 @@
-# Mind — Psicoterapia acessível para quem realmente precisa
+# Mind — Plataforma de Psicoterapia Acessível
 
-Plataforma HealthTech que democratiza o acesso à psicoterapia por meio de um
-modelo de **financiamento compartilhado** entre empresas patrocinadoras,
-psicólogos e pacientes, aliado a um **prontuário estruturado** que organiza
-a evolução clínica ao longo do tratamento — sem uso de inteligência artificial
-sobre o conteúdo das sessões.
+> HealthTech com financiamento tripartite (empresa + paciente + psicólogo) e prontuário estruturado sem IA. Stack: HTML/CSS/JS vanilla + Supabase (Postgres + Auth + Storage) + Chart.js + jsPDF.
 
-> Projeto candidato ao Centelha. Ver `Projeto.pdf` (briefing original) para o
-> racional completo de negócio, impacto social e modelo financeiro.
+Este README documenta o estado do projeto após a rodada de implementação registrada nesta conversa. Serve como ponto de partida para quem continuar o desenvolvimento.
 
-## Stack
+---
 
-- HTML + CSS + JavaScript puro (sem build step, sem framework)
-- [Supabase](https://supabase.com) (Postgres + Auth + Storage) como backend
-- [Chart.js](https://www.chartjs.org/) para os gráficos de evolução
+## 1. Modelo de negócio (resumo)
 
-Não há processo de build: qualquer arquivo `.html` pode ser aberto
-diretamente ou servido como estático (ex.: Vercel, Netlify, GitHub Pages).
+- **Empresa** patrocina parte da sessão (R$40) via programa ESG, sem acesso a nenhum dado clínico individual — só indicadores agregados.
+- **Paciente** paga coparticipação (R$10/sessão).
+- **Psicólogo** recebe R$50/sessão e paga mensalidade (R$120) pela plataforma.
+- **Prontuário inteligente** = estruturação dos registros feitos pelo próprio psicólogo (campos, categorias, linha do tempo). **Sem IA, sem NLP, sem processamento automático** — isso é uma decisão de produto deliberada, reforçada na política de privacidade.
 
-## Modelo de negócio (resumo)
+---
 
-Por sessão realizada com paciente patrocinado:
+## 2. Estrutura de páginas
 
-| Quem paga | Valor |
-|---|---|
-| Empresa patrocinadora | R$ 40,00 |
-| Paciente (coparticipação) | R$ 10,00 |
-| **Psicólogo recebe** | **R$ 50,00** |
+| Página | Público | Função |
+|---|---|---|
+| `index.html` | Todos | Landing page, modal de login |
+| `login.html` | Todos | Login único (detecta o papel pelo e-mail) |
+| `cadastro-paciente.html` | Paciente | Autocadastro / ativação de conta |
+| `cadastro-psicologo.html` | Psicólogo | Cadastro completo (4 abas: pessoal, profissional, atendimento, financeiro) + upload de documentos |
+| `cadastro-status.html` | Psicólogo | Status da análise do cadastro (pendente/aprovado/rejeitado) |
+| `contratos.html` / `contrato-prestacao-servicos.html` | Psicólogo | Contrato de prestação de serviço |
+| `psicologos.html` | Público | Vitrine/listagem de psicólogos |
+| `psicologo.html` | Público | Perfil público + agendamento real |
+| `novo-paciente.html` | Psicólogo | Cadastro manual de paciente (com anamnese) |
+| `paciente.html` | Psicólogo | Ficha clínica completa do paciente |
+| `dashboard-paciente.html` | Paciente | Progresso, linha do tempo, sessões, pagamento |
+| `dashboard-psicologo.html` | Psicólogo | Agenda, solicitações, pacientes, financeiro, alertas |
+| `plano.html` | Psicólogo | Assinatura da plataforma |
+| `empresa.html` | Empresa | Dashboard agregado + relatórios em PDF |
+| `admin.html` | Admin (e-mail fixo) | Aprovação de psicólogo + fila de exclusão LGPD |
+| `meus-dados.html` | Todos | Autoatendimento LGPD (baixar dados / pedir exclusão) |
+| `politica-de-privacidade.html`, `termos-de-uso.html` | Público | Documentos legais |
 
-O psicólogo paga à plataforma uma mensalidade fixa de **R$ 120,00**,
-independente do número de sessões.
+---
 
-## Estrutura de páginas
+## 3. Migrações SQL — rodar NESTA ORDEM no SQL Editor do Supabase
 
-### Público (sem login)
-| Arquivo | Descrição |
-|---|---|
-| `index.html` | Landing page, carrossel de psicólogos, modal de login |
-| `psicologos.html` | Listagem/busca de psicólogos, com filtros e nota média |
-| `psicologo.html` | Perfil público do psicólogo, avaliações, agendamento |
-| `login.html` | Login (redireciona por papel: psicólogo / empresa / paciente) |
-| `cadastro-psicologo.html` | Onboarding do psicólogo em 4 abas (Pessoal, Profissional, Atendimento, Financeiro) |
-| `termos-de-uso.html`, `politica-de-privacidade.html`, `contrato-prestacao-servicos.html` | Documentos legais (ver seção própria abaixo) |
+| # | Arquivo | O que faz |
+|---|---|---|
+| 1 | `migration_seguranca_critica.sql` | RLS em todas as tabelas + views agregadas anônimas para empresa |
+| 2 | `migration_paciente_selfservice.sql` | Paciente pode criar a própria ficha |
+| 3 | `migration_prontuario_inteligente.sql` | Cria `anamneses`, `hipoteses_diagnosticas`, `intercorrencias` + colunas de funcionamento em `sintomas` |
+| 4 | `migration_visibilidade_intercorrencia.sql` | Campo `visivel_paciente` — intercorrência nasce privada por padrão |
+| 5 | `migration_varredura_geral.sql` | Cria `avaliacoes`, `mensalidades_psicologos` + ~25 colunas que faltavam em `psicologos` |
+| 6 | `seed_dados_fantasia.sql` | *(opcional)* popula dados fictícios ligados a uma conta real existente |
+| 7 | `seed_login_demo.sql` | *(opcional)* trio de demo com login: empresa + psicóloga + paciente |
+| 8 | `migration_admin_aprovacao.sql` | Bucket privado de documentos + policies de admin (**troque o e-mail admin antes de rodar**) |
+| 9 | `migration_exclusao_lgpd.sql` | Fila de solicitações de exclusão de conta |
+| 10 | `migration_lembretes_email.sql` | Lembrete de sessão (24h antes) + confirmação de agendamento via Resend (**exige setup manual — ver seção 6**) |
 
-### Psicólogo (autenticado)
-| Arquivo | Descrição |
-|---|---|
-| `dashboard-psicologo.html` | Visão geral, agenda, pacientes, financeiro, alertas clínicos |
-| `paciente.html` | Ficha do paciente: anamnese, hipótese diagnóstica (com histórico), linha do tempo, sessões, evolução |
-| `novo-paciente.html` | Cadastro de paciente novo + anamnese inicial |
-| `plano.html` | Gestão de assinatura (mensal/anual) e histórico de pagamento da mensalidade |
-| `contratos.html` | Status de aceite dos documentos legais |
-| `cadastro-status.html` | Tela de espera enquanto o CRP está em validação |
+⚠️ Todas são idempotentes na parte de schema (`if not exists` / `drop policy if exists`), exceto os **seeds (6 e 7)** — rodar duas vezes duplica dados fictícios.
 
-### Paciente (autenticado)
-| Arquivo | Descrição |
-|---|---|
-| `dashboard-paciente.html` | Progresso (sintomas + funcionamento), sessões, financeiro, check-in emocional |
+---
 
-### Empresa (autenticada)
-| Arquivo | Descrição |
-|---|---|
-| `empresa.html` | Indicadores **agregados e anonimizados** (nunca dado clínico individual) |
+## 4. O que foi implementado nesta rodada
 
-## Banco de dados — ordem de execução das migrações
+### Correções de bugs críticos (recuperação de funcionalidade)
+- **Paciente não conseguia logar de jeito nenhum** — nenhum paciente cadastrado tinha conta de autenticação. Resolvido com `cadastro-paciente.html` (cobre tanto ativação de conta pré-cadastrada quanto autocadastro).
+- **Agendamento não verificava conflito de horário nem disponibilidade real** — reescrito para checar `agendamentos` + `sessoes` antes de mostrar/confirmar horário.
+- **Solicitação de agendamento nunca virava sessão de verdade** — `dashboard-psicologo.html` agora tem painel de aceitar/recusar.
+- **`anamneses`, `hipoteses_diagnosticas`, `intercorrencias`, `avaliacoes`, `mensalidades_psicologos`** — tabelas inteiras que o front-end já usava mas nunca existiam no schema.
+- **`disponibilidade` do psicólogo nunca era preenchida** — não havia campo no formulário de cadastro; sem isso, o agendamento sempre caía no fallback genérico.
+- **Bug de nomenclatura**: `dashboard-psicologo.html` consultava colunas erradas (`data_registro`, gravidade `media`/`alta`) que nunca existiram — corrigido para os nomes reais (`data`, `moderada`/`grave`).
+- **Bug visual**: `psicologos.html` tinha uma expressão JS (`${Array(6).fill(...)}`) colada direto no HTML estático, fora de `<script>` — aparecia como texto literal na tela antes dos cards carregarem.
 
-As migrações estão na raiz do repo (`migration_*.sql`) e devem ser rodadas
-**nesta ordem** no SQL Editor do Supabase, pois migrações posteriores
-dependem de colunas/tabelas criadas pelas anteriores:
+### Funcionalidades novas
+- **Prontuário inteligente completo**: anamnese editável, hipótese diagnóstica versionada (histórico preservado, nunca sobrescrito), linha do tempo consolidada (sessões + hipóteses + intercorrências) — visível tanto para o psicólogo (completa) quanto para o paciente (somente leitura, com nota interna vs. compartilhada).
+- **Relatórios da empresa em PDF de verdade** (jsPDF): impacto semestral, extrato financeiro, adesão por departamento, carta de privacidade — todos usando só as views agregadas, nunca dado clínico.
+- **Painel de admin** (`admin.html`): aprovação de cadastro de psicólogo com visualização segura de documentos (signed URL, 5 min de validade) + fila de solicitações de exclusão LGPD.
+- **Autoatendimento LGPD** (`meus-dados.html`): exportar dados em `.json`, solicitar exclusão (fila revisada por humano, por causa da retenção obrigatória de prontuário).
+- **Lembretes por e-mail** via Resend: confirmação imediata quando o psicólogo aceita um agendamento + lembrete 24h antes da sessão (via `pg_cron` + `pg_net`, chave guardada no Vault do Supabase).
 
-0. **`migration_0_schema_base.sql`** — roda primeiro, sempre. Garante que
-   colunas que o front-end sempre assumiu existir (ex.: `psicologos.abordagem`,
-   `psicologos.bio`, `psicologos.disponibilidade`) realmente existem no banco.
-   Sem isso, as migrações seguintes (que criam views referenciando essas
-   colunas) falham com erro `column "..." does not exist`.
-1. `migration_prontuario_inteligente.sql` — anamnese, hipótese diagnóstica
-   (com histórico), intercorrências, extensão de `sintomas`
-2. `migration_cadastro_psicologo.sql` — onboarding completo do psicólogo
-   (dados pessoais, CRP, documentos, financeiro) + bucket de Storage
-3. `migration_plano_psicologo.sql` — assinatura/mensalidade da plataforma
-4. `migration_avaliacoes.sql` — avaliações públicas de pacientes sobre psicólogos
-5. **`migration_seguranca_critica.sql`** — **rodar sempre por último**, e
-   novamente sempre que uma tabela ou coluna nova for criada. Habilita Row
-   Level Security em todas as tabelas e cria as views anonimizadas usadas
-   pelas telas públicas e pela empresa.
+### Segurança
+- **XSS corrigido em 8 arquivos** (~70 pontos): função `escapeHtml()` aplicada em todo campo de texto vindo do usuário antes de qualquer `innerHTML`. Página pública do psicólogo (`psicologo.html`) era o maior risco, por ser vista por visitantes não-autenticados.
+- **Bucket de documentos (`psicologos-documentos`) agora é privado**, com policy por pasta (`auth.uid()`) + acesso de admin via signed URL.
+- **Chave `service_role` nunca exposta** no front-end — verificado, só a `anon`/`publishable` key aparece nos arquivos (isso é esperado e seguro).
+- **Chave da API do Resend armazenada no Vault** do Supabase, nunca em texto puro em nenhuma tabela ou função (funções SQL são legíveis por qualquer usuário autenticado por padrão).
+- **Contrato de prestação de serviço revisado** contra o Art. 7º da Resolução CFP nº 09/2024 — cláusula de foro e descrição do meio tecnológico da sessão estavam ausentes; adicionados como placeholder explícito para revisão jurídica.
 
-Todas as migrações são seguras para rodar mais de uma vez (`if not exists` /
-`drop policy if exists` antes de recriar).
+---
 
-## Segurança — leia antes de mexer em qualquer tabela
+## 5. Contas de demonstração (se rodou `seed_login_demo.sql`)
 
-A chave `SUPABASE_KEY` usada no front-end é a chave **anon**, pública por
-design — ela fica visível no HTML e isso é esperado. **Quem protege os dados
-de verdade é o Row Level Security (RLS) de cada tabela.** Toda vez que uma
-tabela nova for criada:
+| Papel | E-mail | Senha |
+|---|---|---|
+| Empresa | `empresa.demo-mind@example.com` | `MindDemo123!` |
+| Psicóloga | `psicologa.demo-mind@example.com` | `MindDemo123!` |
+| Paciente | `paciente.demo-mind@example.com` | `MindDemo123!` |
 
-1. Habilite RLS: `alter table <tabela> enable row level security;`
-2. Escreva policies explícitas (nada de tabela sem RLS "pra testar depois" —
-   sem RLS, a tabela fica 100% legível/gravável por qualquer pessoa com a
-   anon key, sem precisar de login).
-3. Se a tabela tiver dado que empresas podem precisar em agregado, crie uma
-   **view** anonimizada (ver `pacientes_agregado_empresa`,
-   `sessoes_agregado_empresa`, `pagamentos_agregado_empresa` e
-   `psicologos_publico` como exemplos) em vez de dar policy direta pra
-   empresa na tabela base.
+Admin (acesso a `admin.html`): `micaelsonnen@gmail.com` (definido nas policies da migração 8 — trocar lá se mudar de responsável).
 
-Regra de ouro do produto: **empresa patrocinadora nunca vê nome, diagnóstico,
-resumo de sessão ou qualquer dado clínico individual** — só números agregados
-(nº de atendimentos, taxa de permanência, etc.). Isso é compromisso contratual
-(ver `contrato-prestacao-servicos.html`) e requisito de LGPD, não só boa prática.
+---
 
-## Documentos legais
+## 6. Setup pendente fora do código (você precisa fazer manualmente)
 
-`termos-de-uso.html`, `politica-de-privacidade.html` e
-`contrato-prestacao-servicos.html` (+ versões `.docx` geradas junto) são
-**minutas estruturadas**, não pareceres jurídicos. Antes de publicar de
-verdade:
+- [ ] **Resend**: criar conta, verificar domínio de envio, gerar API key, salvar no Vault (`vault.create_secret(...)` ou pela tela de Vault do painel), trocar o remetente `onboarding@resend.dev` pelo domínio verificado em `migration_lembretes_email.sql` antes de rodar em produção.
+- [ ] **Rate limiting**: conferir em Authentication → Rate Limits no painel do Supabase (tentativas de login e de cadastro por hora).
+- [ ] **Backup**: conferir plano/retenção em Database → Backups; considerar upgrade para Pro (Point-in-Time Recovery) antes de ter dado clínico real em produção.
+- [ ] **Confirmação de e-mail no Supabase Auth**: confirmar se "Confirm email" está ligado ou desligado (Authentication → Sign In / Providers) — os fluxos de cadastro assumem que `signUp()` retorna sessão utilizável na hora.
 
-- Preencher os campos `[ENTRE COLCHETES]` (razão social, CNPJ, endereço,
-  e-mail do DPO, foro, prazos de repasse).
-- Revisão por advogado(a) — especialmente as cláusulas de responsabilidade
-  civil e a definição de quem é controlador/operador dos dados (hoje: o
-  psicólogo é controlador do prontuário, a Mind é operadora da infraestrutura).
+---
 
-## Mobile
+## 7. Pendências de negócio (fora do escopo de código)
 
-Todas as páginas têm `@media` para telas ≤ 900px (sidebars viram barra
-horizontal, grids colapsam para 1 coluna, tabelas ganham scroll horizontal).
-`index.html` tem menu hambúrguer para o nav principal.
+- **Processamento de pagamento real com split** (empresa/paciente/psicólogo) — hoje os valores são só registrados no banco, não há integração com gateway. Combinado ficar para depois da abertura do CNPJ/conta PJ.
+- **CNPJ, estrutura societária, contador** — fora do escopo técnico.
+- **Revisão jurídica final** do contrato de prestação de serviço, política de privacidade e termos de uso (ambos já têm citações corretas da Resolução CFP nº 001/2009 e nº 006/2019 sobre retenção de prontuário — verificado, mas advogado deve validar o texto completo).
+- **RIPD (Relatório de Impacto à Proteção de Dados)** e nomeação formal de Encarregado (DPO) — documentos/decisões de negócio, não código.
 
-## Pendências conhecidas (não bloqueantes)
+---
 
-- **Painel administrativo** para a equipe Mind aprovar/rejeitar cadastro de
-  psicólogo (CRP). Hoje isso só pode ser feito manualmente no Supabase
-  (`update psicologos set status_cadastro = 'aprovado'`).
-- **Relatório em PDF** para empresa (hoje o botão "Gerar PDF" é um `alert()`).
-- **Agendamento real**: horários hoje são fixos (9 slots), sem checar conflito
-  real de agenda do psicólogo.
-- Onboarding de **paciente** e de **empresa** ainda não existe como fluxo de
-  autocadastro (paciente é criado pelo psicólogo via `novo-paciente.html`).
+## 8. Modelo de dados (tabelas principais)
+
+`psicologos` · `pacientes` · `empresas` · `sessoes` · `sintomas` · `pagamentos` · `agendamentos` · `anamneses` · `hipoteses_diagnosticas` · `intercorrencias` · `avaliacoes` · `mensalidades_psicologos` · `solicitacoes_exclusao`
+
+Todas com RLS habilitado. Relação de acesso: psicólogo vê/edita seus próprios pacientes; paciente vê (e em alguns casos edita) só a própria ficha; empresa só vê views agregadas e anônimas (`pacientes_agregado_empresa`, `sessoes_agregado_empresa`, `pagamentos_agregado_empresa`) — nunca a tabela `sintomas`, `resumo_sessao` ou `diagnostico_cid` diretamente.
