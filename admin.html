@@ -50,8 +50,8 @@ h1 { font-size: 22px; margin-bottom: 6px; }
 </div>
 
 <script>
-const SUPABASE_URL = 'https://uqzmkctsjvjpohzbvtjv.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_2Fp_Vyz1feYA03TEUZortQ_fgbFRwEW';
+const SUPABASE_URL = 'https://xzkmokjyaqutkjxqlkck.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_5OMjosvKS6_Mt3gGYUxQ0w_JrMtH1jZ';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function escapeHtml(str) {
@@ -106,7 +106,7 @@ function renderizar(lista, solicitacoes) {
           </div>
         </div>
         <div class="actions">
-          <input type="text" class="motivo-input" id="resp-${s.id}" placeholder="Resposta para o usuário (ex: dados não-clínicos removidos em [data]; dados clínicos retidos até [data] por exigência legal)">
+          <input type="text" class="motivo-input" id="resp-${s.id}" placeholder="Ex: dados não-clínicos removidos em [data]; prontuário retido até [data+5 anos, Res. CFP 6/2019] e então anonimizado">
           <button class="btn btn-aprovar" onclick="processarSolicitacao('${s.id}', 'processada')">Marcar como processada</button>
           <button class="btn btn-recusar" onclick="processarSolicitacao('${s.id}', 'recusada')">Recusar</button>
         </div>
