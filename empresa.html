@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mind — Dashboard Empresa</title>
+<title>Puzzle — Dashboard Empresa</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -31,7 +31,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 .layout { display: flex; min-height: 100vh; }
 .sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 0; position: fixed; height: 100vh; overflow-y: auto; }
 .logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-.logo-mark { width: 40px; height: 40px; background: linear-gradient(135deg, var(--navy), var(--sage)); border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; margin-bottom: 10px; }
+.logo-mark { width: 40px; height: 40px; object-fit: contain; margin-bottom: 10px; }
 .logo h2 { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, var(--navy), var(--sage)); color: var(--navy); }
 .logo p { font-size: 12px; color: var(--muted); }
 nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px; margin: 2px 8px; transition: all 0.15s; }
@@ -87,8 +87,8 @@ tbody tr:last-child td { border-bottom: none; }
 <div class="layout">
   <aside class="sidebar">
     <div class="logo">
-      <div class="logo-mark">M</div>
-      <h2>Mind</h2>
+      <img src="puzzle-logo.webp" alt="Puzzle" class="logo-mark">
+      <h2>Puzzle</h2>
       <p id="sidebar-empresa">Empresa</p>
     </div>
     <nav>
@@ -116,7 +116,7 @@ tbody tr:last-child td { border-bottom: none; }
     <!-- VISÃO GERAL -->
     <div id="aba-visao" class="tab-section active">
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Colaboradores</div><div class="stat-value" id="stat-colab">—</div><div class="stat-sub">vinculados ao Mind</div></div>
+        <div class="stat-card"><div class="stat-label">Colaboradores</div><div class="stat-value" id="stat-colab">—</div><div class="stat-sub">vinculados ao Puzzle</div></div>
         <div class="stat-card"><div class="stat-label">Sessões este mês</div><div class="stat-value" id="stat-sessoes">—</div><div class="stat-sub">realizadas</div></div>
         <div class="stat-card"><div class="stat-label">Taxa de adesão</div><div class="stat-value" id="stat-adesao">—</div><div class="stat-sub">média da equipe</div></div>
         <div class="stat-card"><div class="stat-label">Custo mensal</div><div class="stat-value" id="stat-custo">—</div><div class="stat-sub">investimento total</div></div>
@@ -334,7 +334,7 @@ async function carregarEquipe() {
         <td><span class="badge ${p.status === 'ativo' ? 'ok' : 'inativo'}">${p.status || 'ativo'}</span></td>
       </tr>`).join('')}
     </tbody></table>
-    <p style="font-size:12px;color:var(--muted);margin-top:12px">🔒 Por política de privacidade, colaboradores são identificados apenas por número — a Mind nunca compartilha nomes ou dados clínicos individuais com empresas patrocinadoras.</p>`;
+    <p style="font-size:12px;color:var(--muted);margin-top:12px">🔒 Por política de privacidade, colaboradores são identificados apenas por número — a Puzzle nunca compartilha nomes ou dados clínicos individuais com empresas patrocinadoras.</p>`;
 }
 
 async function carregarFinanceiro() {
@@ -386,7 +386,7 @@ function novoDocumentoPDF(titulo, empresaNome) {
   doc.rect(0, 0, 210, 28, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
-  doc.text('Mind', 14, 13);
+  doc.text('Puzzle', 14, 13);
   doc.setFontSize(10);
   doc.text(titulo, 14, 21);
 
@@ -402,7 +402,7 @@ function rodapePrivacidade(doc) {
   const pageHeight = doc.internal.pageSize.getHeight();
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
-  doc.text('🔒 Este relatório contém apenas dados agregados e anonimizados. A Mind nunca compartilha diagnóstico,', 14, pageHeight - 16);
+  doc.text('🔒 Este relatório contém apenas dados agregados e anonimizados. A Puzzle nunca compartilha diagnóstico,', 14, pageHeight - 16);
   doc.text('conteúdo de sessões ou qualquer dado clínico individual com empresas patrocinadoras.', 14, pageHeight - 11);
 }
 
@@ -452,7 +452,7 @@ async function gerarRelatorioImpacto() {
   Object.entries(depts).forEach(([nome, qtd]) => { linhaTabela(doc, y, [nome, qtd], [100, 40]); y += 7; });
 
   rodapePrivacidade(doc);
-  doc.save('mind-relatorio-impacto.pdf');
+  doc.save('puzzle-relatorio-impacto.pdf');
 }
 
 async function gerarRelatorioFinanceiro() {
@@ -494,7 +494,7 @@ async function gerarRelatorioFinanceiro() {
   });
 
   rodapePrivacidade(doc);
-  doc.save('mind-extrato-financeiro.pdf');
+  doc.save('puzzle-extrato-financeiro.pdf');
 }
 
 async function gerarRelatorioAdesao() {
@@ -538,7 +538,7 @@ async function gerarRelatorioAdesao() {
   if (!Object.keys(depts).length) { doc.setFontSize(10); doc.text('Sem colaboradores vinculados ainda.', 14, y); }
 
   rodapePrivacidade(doc);
-  doc.save('mind-adesao-departamento.pdf');
+  doc.save('puzzle-adesao-departamento.pdf');
 }
 
 function gerarCartaPrivacidade() {
@@ -547,7 +547,7 @@ function gerarCartaPrivacidade() {
 
   doc.setFontSize(10);
   const paragrafos = [
-    'Sua empresa oferece acesso à psicoterapia através da Mind como parte de um benefício de saúde mental. Este documento explica como sua privacidade é protegida nesse processo.',
+    'Sua empresa oferece acesso à psicoterapia através da Puzzle como parte de um benefício de saúde mental. Este documento explica como sua privacidade é protegida nesse processo.',
     '',
     'O que sua empresa NUNCA vê:',
     '• Diagnóstico ou hipótese clínica',
@@ -560,9 +560,9 @@ function gerarCartaPrivacidade() {
     '• Indicadores de engajamento por departamento, sem identificar pessoas',
     '• Informações financeiras sobre o investimento total no programa',
     '',
-    'Sua relação terapêutica é inteiramente confidencial entre você e seu psicólogo, protegida pelo sigilo profissional e pela LGPD (Lei Geral de Proteção de Dados). A Mind atua como intermediária tecnológica e financeira, nunca como parte do seu tratamento.',
+    'Sua relação terapêutica é inteiramente confidencial entre você e seu psicólogo, protegida pelo sigilo profissional e pela LGPD (Lei Geral de Proteção de Dados). A Puzzle atua como intermediária tecnológica e financeira, nunca como parte do seu tratamento.',
     '',
-    'Dúvidas sobre privacidade podem ser encaminhadas diretamente à Mind pelos canais oficiais da plataforma.'
+    'Dúvidas sobre privacidade podem ser encaminhadas diretamente à Puzzle pelos canais oficiais da plataforma.'
   ];
 
   paragrafos.forEach(p => {
@@ -574,7 +574,7 @@ function gerarCartaPrivacidade() {
     });
   });
 
-  doc.save('mind-carta-privacidade.pdf');
+  doc.save('puzzle-carta-privacidade.pdf');
 }
 
 async function gerarRelatorio(tipo) {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mind — Meus Dados</title>
+<title>Puzzle — Meus Dados</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -83,7 +83,7 @@ async function renderizar() {
   document.getElementById('conteudo').innerHTML = `
     <div class="card">
       <h3>📦 Baixar meus dados</h3>
-      <p>Gera um arquivo com todas as informações que a Mind guarda sobre sua conta (${contaTipo === 'psicologo' ? 'perfil profissional' : contaTipo === 'empresa' ? 'dados da empresa e colaboradores vinculados' : 'perfil e histórico clínico'}).</p>
+      <p>Gera um arquivo com todas as informações que a Puzzle guarda sobre sua conta (${contaTipo === 'psicologo' ? 'perfil profissional' : contaTipo === 'empresa' ? 'dados da empresa e colaboradores vinculados' : 'perfil e histórico clínico'}).</p>
       <button class="btn btn-primario" id="btn-baixar" onclick="baixarDados()">Baixar meus dados (.json)</button>
     </div>
 
@@ -142,7 +142,7 @@ async function baixarDados() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `mind-meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `puzzle-meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   } catch (e) {

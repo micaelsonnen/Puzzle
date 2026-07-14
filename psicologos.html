@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mind — Encontre seu Psicólogo</title>
+<title>Puzzle — Encontre seu Psicólogo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -39,13 +39,11 @@
     border-bottom: 1px solid var(--border);
   }
   .nav-logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.4rem;
-    color: var(--navy);
     text-decoration: none;
-    letter-spacing: -0.02em;
+    display: inline-flex;
+    align-items: center;
   }
-  .nav-logo span { color: var(--sage); }
+  .nav-logo img { height: 40px; }
   .nav-right { display: flex; align-items: center; gap: 1.5rem; }
   .nav-link {
     font-size: 0.875rem; font-weight: 500;
@@ -321,7 +319,7 @@
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">Mind<span>.</span></a>
+  <a href="index.html" class="nav-logo"><img src="puzzle-logo.webp" alt="Puzzle"></a>
   <div class="nav-right">
     <a href="psicologos.html" class="nav-link" style="color:var(--navy); font-weight:600">Psicólogos</a>
     <a href="index.html#como-funciona" class="nav-link">Como funciona</a>
@@ -377,7 +375,7 @@
 </div>
 
 <footer>
-  <strong>Mind</strong> — Saúde mental no trabalho · <a href="index.html" style="color:rgba(255,255,255,0.5)">Início</a>
+  <strong>Puzzle</strong> — Saúde mental no trabalho · <a href="index.html" style="color:rgba(255,255,255,0.5)">Início</a>
 </footer>
 
 <script>
@@ -486,7 +484,7 @@ function renderizar(lista) {
         <span class="card-abordagem">${escapeHtml(p.abordagem) || 'Abordagem integrada'}</span>
         <div class="card-especialidades">${espTags}</div>
         <div class="card-footer">
-          <div class="card-valor">${valor}<span style="font-size:0.75rem">via Mind</span></div>
+          <div class="card-valor">${valor}<span style="font-size:0.75rem">via Puzzle</span></div>
           <span class="card-btn">Ver perfil</span>
         </div>
       </div>

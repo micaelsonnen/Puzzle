@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mind — Cadastro de Psicólogo</title>
+<title>Puzzle — Cadastro de Psicólogo</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap');
@@ -72,7 +72,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 <div class="container">
   <div class="intro">
     <h2>Cadastro de Psicólogo</h2>
-    <p>Preencha os dados abaixo para começar a atender pacientes pela Mind. Cada etapa é salva separadamente.</p>
+    <p>Preencha os dados abaixo para começar a atender pacientes pela Puzzle. Cada etapa é salva separadamente.</p>
   </div>
 
   <div class="tabs">
@@ -86,7 +86,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
   <div id="tab-pessoal" class="tab-content active">
     <div class="card">
       <h3>Dados pessoais e acesso</h3>
-      <div class="card-sub">Cria sua conta na Mind. As demais abas serão liberadas após salvar esta etapa.</div>
+      <div class="card-sub">Cria sua conta na Puzzle. As demais abas serão liberadas após salvar esta etapa.</div>
 
       <div class="form-group-row">
         <div class="form-group"><label class="required">Nome</label><input type="text" id="p-nome"></div>
@@ -113,7 +113,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 
       <div class="checkbox-row">
         <input type="checkbox" id="p-aceite">
-        <label for="p-aceite">Li e concordo com os <a href="termos-de-uso.html" target="_blank">Termos de Uso</a>, a <a href="politica-de-privacidade.html" target="_blank">Política de Privacidade</a> e o <a href="contrato-prestacao-servicos.html" target="_blank">Contrato de Prestação de Serviços</a> da Mind.</label>
+        <label for="p-aceite">Li e concordo com os <a href="termos-de-uso.html" target="_blank">Termos de Uso</a>, a <a href="politica-de-privacidade.html" target="_blank">Política de Privacidade</a> e o <a href="contrato-prestacao-servicos.html" target="_blank">Contrato de Prestação de Serviços</a> da Puzzle.</label>
       </div>
 
       <div id="msg-pessoal" class="msg"></div>
@@ -125,7 +125,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
   <div id="tab-profissional" class="tab-content">
     <div class="card">
       <h3>Registro profissional</h3>
-      <div class="card-sub">Seu CRP é validado manualmente pela equipe Mind antes da liberação do perfil público.</div>
+      <div class="card-sub">Seu CRP é validado manualmente pela equipe Puzzle antes da liberação do perfil público.</div>
 
       <div class="form-group-row">
         <div class="form-group"><label class="required">Número do CRP</label><input type="text" id="pr-crp"></div>
@@ -165,7 +165,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
   <div id="tab-atendimento" class="tab-content">
     <div class="card">
       <h3>Perfil de atendimento</h3>
-      <div class="card-sub">Essas informações aparecem no seu perfil público na Mind</div>
+      <div class="card-sub">Essas informações aparecem no seu perfil público na Puzzle</div>
 
       <div class="form-group"><label class="required">Resumo curto</label><input type="text" id="at-resumo" placeholder="Ex: Fazer terapia é um ato de amor próprio. Cuide-se!"></div>
       <div class="form-group"><label class="required">Sobre mim</label><textarea id="at-sobre" rows="5" placeholder="Fale sobre sua abordagem, experiência e o que os pacientes podem esperar do acompanhamento."></textarea></div>

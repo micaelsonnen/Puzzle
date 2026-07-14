@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mind — Minha Jornada</title>
+<title>Puzzle — Minha Jornada</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -28,7 +28,7 @@
 }
 body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
 .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
-.logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, var(--navy), var(--sage)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: white; }
+.logo-mark { width: 32px; height: 32px; object-fit: contain; }
 .topbar h1 { font-size: 16px; font-weight: 700; background: linear-gradient(135deg, var(--navy), var(--sage)); color: var(--navy); }
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .topbar-nome { font-size: 14px; font-weight: 500; }
@@ -106,8 +106,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Inter', system-u
 </head>
 <body>
 <div class="topbar">
-  <div class="logo-mark">M</div>
-  <h1>Mind</h1>
+  <img src="puzzle-logo.webp" alt="Puzzle" class="logo-mark">
+  <h1>Puzzle</h1>
   <div class="topbar-right">
     <span class="topbar-nome" id="topbar-nome">—</span>
     <button class="logout-btn" onclick="sair()" title="Sair">⏏</button>

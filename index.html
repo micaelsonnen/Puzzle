@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mind — Plataforma de Psicoterapia Acessível</title>
+<title>Puzzle — Plataforma de Psicoterapia Acessível</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -44,13 +44,11 @@
   nav.scrolled { box-shadow: 0 2px 20px rgba(45,74,107,0.08); }
 
   .nav-logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.4rem;
-    color: var(--navy);
+    display: inline-flex;
+    align-items: center;
     text-decoration: none;
-    letter-spacing: -0.02em;
   }
-  .nav-logo span { color: var(--sage); }
+  .nav-logo img { height: 42px; }
 
   .nav-links { display: flex; gap: 2rem; list-style: none; }
   .nav-links a {
@@ -765,8 +763,8 @@
     transition: color 0.2s;
   }
   .modal-close:hover { color: var(--text); }
-  .modal-logo { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--navy); margin-bottom: 4px; }
-  .modal-logo span { color: var(--sage); }
+  .modal-logo { margin-bottom: 8px; }
+  .modal-logo img { height: 44px; }
   .modal-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 28px; }
   .modal label {
     display: block; font-size: 0.75rem; font-weight: 600;
@@ -901,7 +899,7 @@
 
 <!-- NAV -->
 <nav id="nav">
-  <a href="#" class="nav-logo"><span>Mind</span></a>
+  <a href="#" class="nav-logo"><img src="puzzle-logo.webp" alt="Puzzle"></a>
   <ul class="nav-links" id="navLinks">
     <li><a href="#problema">Problema</a></li>
     <li><a href="#como-funciona">Como funciona</a></li>
@@ -1309,7 +1307,7 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-logo"><span>Mind</span></div>
+  <div class="footer-logo"><span>Puzzle</span></div>
   <p>Plataforma Inteligente para Democratização do Acesso à Psicoterapia</p>
   <p style="margin-top:0.75rem;">Juliana Myrian & Tatyana Reis · Projeto Centelha</p>
 </footer>
@@ -1338,7 +1336,7 @@
 <div class="modal-overlay" id="modalOverlay" onclick="fecharSeClicouFora(event)">
   <div class="modal">
     <button class="modal-close" onclick="fecharLogin()">×</button>
-    <div class="modal-logo"><span>Mind</span></div>
+    <div class="modal-logo"><img src="puzzle-logo.webp" alt="Puzzle"></div>
     <p class="modal-sub">Entre com seu e-mail e senha</p>
     <label>E-mail</label>
     <input type="email" id="m-email" placeholder="seu@email.com" autocomplete="email">
