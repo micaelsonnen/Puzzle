@@ -296,8 +296,32 @@ tbody tr:last-child td { border-bottom: none; }
           <div class="stat-value" id="fin-pagas">—</div>
         </div>
       </div>
-      <div class="card">
-        <h3>💳 Histórico de pagamentos</h3>
+
+      <div class="stats-grid" style="grid-template-columns: repeat(2,1fr);margin-top:14px">
+        <div class="stat-card">
+          <div class="stat-label">Recebido — pacientes particulares</div>
+          <div class="stat-value" id="fin-particular">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Recebido — pacientes corporativos (empresa)</div>
+          <div class="stat-value" id="fin-corporativo">—</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <h3 style="margin:0">💳 Histórico de pagamentos</h3>
+          <div style="display:flex;gap:10px;align-items:center">
+            <select id="fin-filtro-mes" onchange="filtrarFinanceiro()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit">
+              <option value="">Todos os meses</option>
+            </select>
+            <select id="fin-filtro-tipo" onchange="filtrarFinanceiro()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit">
+              <option value="">Particular + Corporativo</option>
+              <option value="particular">Só particular</option>
+              <option value="corporativo">Só corporativo</option>
+            </select>
+          </div>
+        </div>
         <div id="tabela-pagamentos"><div class="loading">Carregando...</div></div>
       </div>
     </div>
@@ -563,26 +587,64 @@ async function carregarAgenda() {
   }).join('');
 }
 
+let TODOS_PAGAMENTOS = [];
+
 async function carregarFinanceiro() {
-  const { data } = await db.from('pagamentos').select('*, sessoes(data_hora, pacientes(nome))').order('data_pagamento', { ascending: false });
-  
-  const recebido = data?.filter(p => p.status_pagamento === 'pago').reduce((s, p) => s + (p.valor_psicologo || 50), 0) || 0;
-  const pendente = data?.filter(p => p.status_pagamento !== 'pago').reduce((s, p) => s + (p.valor_psicologo || 50), 0) || 0;
-  const pagas = data?.filter(p => p.status_pagamento === 'pago').length || 0;
+  const { data } = await db.from('pagamentos').select('*, sessoes(data_hora, pacientes(nome, empresa_id))').order('data_pagamento', { ascending: false });
+  TODOS_PAGAMENTOS = data || [];
+
+  const recebido = TODOS_PAGAMENTOS.filter(p => p.status_pagamento === 'pago').reduce((s, p) => s + (p.valor_psicologo || 50), 0);
+  const pendente = TODOS_PAGAMENTOS.filter(p => p.status_pagamento !== 'pago').reduce((s, p) => s + (p.valor_psicologo || 50), 0);
+  const pagas = TODOS_PAGAMENTOS.filter(p => p.status_pagamento === 'pago').length;
+
+  const particular = TODOS_PAGAMENTOS.filter(p => p.status_pagamento === 'pago' && !p.sessoes?.pacientes?.empresa_id).reduce((s, p) => s + (p.valor_psicologo || 50), 0);
+  const corporativo = TODOS_PAGAMENTOS.filter(p => p.status_pagamento === 'pago' && p.sessoes?.pacientes?.empresa_id).reduce((s, p) => s + (p.valor_psicologo || 50), 0);
 
   document.getElementById('fin-recebido').textContent = 'R$' + recebido.toLocaleString('pt-BR');
   document.getElementById('fin-pendente').textContent = 'R$' + pendente.toLocaleString('pt-BR');
   document.getElementById('fin-pagas').textContent = pagas;
+  document.getElementById('fin-particular').textContent = 'R$' + particular.toLocaleString('pt-BR');
+  document.getElementById('fin-corporativo').textContent = 'R$' + corporativo.toLocaleString('pt-BR');
 
+  // Popula o filtro de mês com os meses que de fato têm pagamento
+  const meses = [...new Set(TODOS_PAGAMENTOS.filter(p => p.data_pagamento).map(p => p.data_pagamento.slice(0, 7)))].sort().reverse();
+  const selMes = document.getElementById('fin-filtro-mes');
+  const mesAtual = selMes.value;
+  selMes.innerHTML = '<option value="">Todos os meses</option>' + meses.map(m => {
+    const [ano, mes] = m.split('-');
+    const nomeMes = new Date(ano, mes - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return `<option value="${m}">${nomeMes}</option>`;
+  }).join('');
+  selMes.value = mesAtual;
+
+  filtrarFinanceiro();
+}
+
+function filtrarFinanceiro() {
+  const mes = document.getElementById('fin-filtro-mes').value;
+  const tipo = document.getElementById('fin-filtro-tipo').value;
+
+  const filtrados = TODOS_PAGAMENTOS.filter(p => {
+    const bateMes = !mes || (p.data_pagamento && p.data_pagamento.slice(0, 7) === mes);
+    const ehCorporativo = !!p.sessoes?.pacientes?.empresa_id;
+    const bateTipo = !tipo || (tipo === 'corporativo' ? ehCorporativo : !ehCorporativo);
+    return bateMes && bateTipo;
+  });
+
+  desenharTabelaFinanceiro(filtrados);
+}
+
+function desenharTabelaFinanceiro(data) {
   const el = document.getElementById('tabela-pagamentos');
-  if (!data?.length) { el.innerHTML = '<div class="empty">Nenhum pagamento registrado</div>'; return; }
+  if (!data?.length) { el.innerHTML = '<div class="empty">Nenhum pagamento encontrado com esses filtros</div>'; return; }
 
   el.innerHTML = `<table>
-    <thead><tr><th>Data</th><th>Paciente</th><th>Valor</th><th>Status</th></tr></thead>
-    <tbody>${data.slice(0, 20).map(p => `
+    <thead><tr><th>Data</th><th>Paciente</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead>
+    <tbody>${data.slice(0, 100).map(p => `
       <tr>
         <td>${p.data_pagamento ? new Date(p.data_pagamento).toLocaleDateString('pt-BR') : '—'}</td>
         <td>${escapeHtml(p.sessoes?.pacientes?.nome) || '—'}</td>
+        <td><span class="badge ${p.sessoes?.pacientes?.empresa_id ? 'ok' : 'alerta'}">${p.sessoes?.pacientes?.empresa_id ? 'Corporativo' : 'Particular'}</span></td>
         <td>R$ ${(p.valor_psicologo || 50).toFixed(2)}</td>
         <td><span class="badge ${p.status_pagamento === 'pago' ? 'ok' : 'alerta'}">${p.status_pagamento || 'pendente'}</span></td>
       </tr>`).join('')}
