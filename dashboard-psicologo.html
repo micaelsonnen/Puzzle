@@ -167,6 +167,14 @@ tbody tr:last-child td { border-bottom: none; }
           <h3 style="margin:0">👥 Todos os pacientes</h3>
           <a href="novo-paciente.html" class="novo-paciente-btn">+ Novo paciente</a>
         </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input type="text" id="busca-paciente" placeholder="Buscar por nome..." oninput="filtrarPacientesLista()" style="flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;font-family:inherit">
+          <select id="filtro-status-paciente" onchange="filtrarPacientesLista()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;font-family:inherit">
+            <option value="">Todos os status</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
+        </div>
         <div id="tabela-pacientes"><div class="loading">Carregando...</div></div>
       </div>
     </div>
@@ -404,10 +412,10 @@ async function carregarChartSessoes() {
   });
 }
 
+let TODOS_PACIENTES_PSI = [];
+
 async function carregarPacientes() {
   const { data } = await db.from('pacientes').select('id, nome, diagnostico_cid, total_sessoes, status').eq('psicologo_id', psicologoId).order('nome');
-  const el = document.getElementById('tabela-pacientes');
-  if (!data?.length) { el.innerHTML = '<div class="empty">Nenhum paciente cadastrado</div>'; return; }
 
   // Busca a hipótese diagnóstica ativa de cada paciente (fonte de verdade atual,
   // substitui o campo fixo diagnostico_cid que não registrava evolução)
@@ -415,17 +423,38 @@ async function carregarPacientes() {
   const cidPorPaciente = {};
   hipoteses?.forEach(h => { cidPorPaciente[h.paciente_id] = h.cid; });
 
+  TODOS_PACIENTES_PSI = (data || []).map(p => ({ ...p, cid_ativo: cidPorPaciente[p.id] || p.diagnostico_cid }));
+  desenharTabelaPacientes(TODOS_PACIENTES_PSI);
+}
+
+function desenharTabelaPacientes(lista) {
+  const el = document.getElementById('tabela-pacientes');
+  if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum paciente encontrado</div>'; return; }
+
   el.innerHTML = `<table>
     <thead><tr><th>Nome</th><th>Hipótese diagnóstica</th><th>Sessões</th><th>Status</th><th>Ação</th></tr></thead>
-    <tbody>${data.map(p => `
+    <tbody>${lista.map(p => `
       <tr>
         <td><strong>${escapeHtml(p.nome)}</strong></td>
-        <td>${cidPorPaciente[p.id] || p.diagnostico_cid || '—'}</td>
+        <td>${escapeHtml(p.cid_ativo) || '—'}</td>
         <td>${p.total_sessoes || 0}</td>
         <td><span class="badge ${p.status === 'ativo' ? 'ok' : 'falta'}">${p.status}</span></td>
         <td><a class="link" href="paciente.html?id=${p.id}">Ver ficha →</a></td>
       </tr>`).join('')}
     </tbody></table>`;
+}
+
+function filtrarPacientesLista() {
+  const termo = document.getElementById('busca-paciente').value.toLowerCase();
+  const status = document.getElementById('filtro-status-paciente').value;
+
+  const filtrados = TODOS_PACIENTES_PSI.filter(p => {
+    const bateNome = (p.nome || '').toLowerCase().includes(termo);
+    const bateStatus = !status || p.status === status;
+    return bateNome && bateStatus;
+  });
+
+  desenharTabelaPacientes(filtrados);
 }
 
 async function carregarSolicitacoes() {
