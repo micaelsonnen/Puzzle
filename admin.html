@@ -123,7 +123,7 @@ function mostrarTab(nome, el) {
 /* ---------------- CARREGAMENTO ---------------- */
 
 async function carregarPsicologos() {
-  const { data } = await db.from('psicologos').select('id, nome, email, crp, uf_crp, status_cadastro, criado_em, celular, formacao, crp_doc_url, diploma_doc_url, certidao_doc_url, motivo_recusa').order('criado_em', { ascending: false });
+  const { data } = await db.from('psicologos').select('id, nome, email, crp, uf_crp, status_cadastro, criado_em, celular, formacao, crp_doc_url, diploma_doc_url, certidao_doc_url, motivo_recusa, primeira_mensalidade_confirmada').order('criado_em', { ascending: false });
   TODOS_PSICOLOGOS = data || [];
 }
 
@@ -465,8 +465,12 @@ function renderAprovacoes() {
             <span class="badge em_analise">Em análise</span>
           </div>
           <div class="docs" id="docs-${p.id}"><span class="meta">Carregando documentos...</span></div>
+          <label style="display:flex;align-items:center;gap:8px;margin:14px 0;font-size:13px;background:var(--surface2);padding:10px 14px;border-radius:8px;cursor:pointer">
+            <input type="checkbox" id="pagto-${p.id}" onchange="document.getElementById('btn-aprovar-${p.id}').disabled = !this.checked" ${p.primeira_mensalidade_confirmada ? 'checked' : ''}>
+            Confirmo que recebi o pagamento da primeira mensalidade (R$120) — verificado por fora (Pix/transferência)
+          </label>
           <div class="actions">
-            <button class="btn btn-aprovar" onclick="aprovar('${p.id}')">Aprovar</button>
+            <button class="btn btn-aprovar" id="btn-aprovar-${p.id}" onclick="aprovar('${p.id}')" ${p.primeira_mensalidade_confirmada ? '' : 'disabled'}>Aprovar</button>
             <input type="text" class="motivo-input" id="motivo-${p.id}" placeholder="Motivo da recusa (opcional)">
             <button class="btn btn-recusar" onclick="recusar('${p.id}')">Recusar</button>
           </div>
@@ -495,7 +499,7 @@ async function carregarDocs(p) {
 }
 
 async function aprovar(id) {
-  const { error } = await db.from('psicologos').update({ status_cadastro: 'aprovado', motivo_recusa: null }).eq('id', id);
+  const { error } = await db.from('psicologos').update({ status_cadastro: 'aprovado', motivo_recusa: null, primeira_mensalidade_confirmada: true }).eq('id', id);
   if (error) { alert('Erro ao aprovar: ' + error.message); return; }
   await carregarPsicologos();
   renderAprovacoes();

@@ -907,6 +907,7 @@
     <li><a href="#impacto">Impacto</a></li>
     <li><a href="#pitch" class="nav-cta">Conheça o projeto</a></li>
   </ul>
+  <button class="nav-cta" style="border:none;cursor:pointer;font-family:inherit;font-size:0.875rem" onclick="abrirModalCadastro()">Faça parte</button>
   <button class="nav-entrar" onclick="abrirLogin()">Entrar</button>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMenuMobile()" aria-label="Abrir menu">☰</button>
 </nav>
@@ -1351,7 +1352,34 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalCadastroOverlay" onclick="fecharSeClicouForaCadastro(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="fecharModalCadastro()">×</button>
+    <div class="modal-logo"><img src="puzzle-logo.webp" alt="Puzzle"></div>
+    <p class="modal-sub" style="margin-bottom:20px">Como você quer fazer parte da Puzzle?</p>
+    <a href="cadastro-paciente.html" style="display:block;text-decoration:none;background:var(--navy);color:white;text-align:center;padding:14px;border-radius:8px;font-weight:600;margin-bottom:12px">
+      🧍 Sou paciente — quero fazer terapia
+    </a>
+    <a href="cadastro-psicologo.html" style="display:block;text-decoration:none;background:none;border:1.5px solid var(--navy);color:var(--navy);text-align:center;padding:14px;border-radius:8px;font-weight:600">
+      🧑‍⚕️ Sou psicólogo(a) — quero atender pela plataforma
+    </a>
+    <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--muted,#6B7A8D)">
+      Já tem conta? <a href="#" onclick="fecharModalCadastro(); abrirLogin(); return false;" style="color:inherit;font-weight:600">Entrar</a>
+    </p>
+  </div>
+</div>
+
 <script>
+function abrirModalCadastro() {
+  document.getElementById('modalCadastroOverlay').classList.add('aberto');
+}
+function fecharModalCadastro() {
+  document.getElementById('modalCadastroOverlay').classList.remove('aberto');
+}
+function fecharSeClicouForaCadastro(e) {
+  if (e.target === document.getElementById('modalCadastroOverlay')) fecharModalCadastro();
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
