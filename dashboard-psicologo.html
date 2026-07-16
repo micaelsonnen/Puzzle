@@ -570,7 +570,7 @@ async function recusarSolicitacao(agendamentoId) {
 }
 
 async function carregarAgenda() {
-  const { data } = await db.from('sessoes').select('data_hora, status, pacientes(nome)').eq('psicologo_id', psicologoId).gte('data_hora', new Date().toISOString()).order('data_hora').limit(20);
+  const { data } = await db.from('sessoes').select('id, data_hora, status, pacientes(nome)').eq('psicologo_id', psicologoId).gte('data_hora', new Date().toISOString()).order('data_hora').limit(20);
   const el = document.getElementById('lista-agenda');
   if (!data?.length) { el.innerHTML = '<div class="empty">Sem sessões agendadas</div>'; return; }
 
@@ -583,6 +583,7 @@ async function carregarAgenda() {
       <span class="hora">${hora}</span>
       <div class="agenda-info"><div class="nome">${escapeHtml(s.pacientes?.nome) || '—'}</div></div>
       <span class="badge ${s.status === 'realizada' ? 'ok' : 'alerta'}">${s.status}</span>
+      ${s.status === 'agendada' ? `<a href="sala-video.html?sessao=${s.id}" style="margin-left:10px;background:#2D4A6B;color:white;text-decoration:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap">🎥 Entrar</a>` : ''}
     </div>`;
   }).join('');
 }

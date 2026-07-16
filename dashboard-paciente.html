@@ -365,7 +365,7 @@ async function carregarProgresso() {
 }
 
 async function carregarHistSessoes() {
-  const { data } = await db.from('sessoes').select('data_hora, status, resumo_sessao, tarefa_casa').eq('paciente_id', pacienteData.id).order('data_hora', { ascending: false });
+  const { data } = await db.from('sessoes').select('id, data_hora, status, resumo_sessao, tarefa_casa').eq('paciente_id', pacienteData.id).order('data_hora', { ascending: false });
   const el = document.getElementById('hist-sessoes');
   if (!data?.length) { el.innerHTML = '<div class="sem-dados">Nenhuma sessão ainda</div>'; return; }
   el.innerHTML = data.map(s => `
@@ -373,6 +373,7 @@ async function carregarHistSessoes() {
       <div class="sh-data">${new Date(s.data_hora).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
         <span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:10px;background:${s.status === 'realizada' ? 'rgba(52,211,153,0.15)' : 'rgba(251,191,36,0.15)'};color:${s.status === 'realizada' ? '#5B8C6E' : '#b45309'}">${s.status}</span>
       </div>
+      ${s.status === 'agendada' ? `<a href="sala-video.html?sessao=${s.id}" style="display:inline-block;margin-top:8px;background:#2D4A6B;color:white;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600">🎥 Entrar na sessão</a>` : ''}
       ${s.resumo_sessao ? `<p class="sh-resumo">${escapeHtml(s.resumo_sessao)}</p>` : ''}
       ${s.tarefa_casa ? `<p class="sh-tarefa">📌 ${escapeHtml(s.tarefa_casa)}</p>` : ''}
     </div>`).join('');

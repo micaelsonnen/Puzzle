@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puzzle — Sessão de vídeo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1A2332; color: white; font-family: 'Inter', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #0f1622; }
+.topbar .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.topbar .logo img { height: 28px; }
+.topbar a { color: #9ca8b8; text-decoration: none; font-size: 13px; }
+.conteudo { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+iframe { width: 100%; height: 100%; border: none; }
+.estado { text-align: center; color: #9ca8b8; padding: 40px; }
+.spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #5B8C6E; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.erro { color: #f87171; }
+.btn-voltar { display: inline-block; margin-top: 16px; background: #2D4A6B; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><img src="puzzle-logo.webp" alt="Puzzle"> Sessão de vídeo</div>
+  <a href="#" onclick="history.back(); return false;">← Sair da sessão</a>
+</div>
+
+<div class="conteudo" id="conteudo">
+  <div class="estado">
+    <div class="spinner"></div>
+    <p>Preparando sua sala...</p>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://xzkmokjyaqutkjxqlkck.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_5OMjosvKS6_Mt3gGYUxQ0w_JrMtH1jZ';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const params = new URLSearchParams(window.location.search);
+const sessaoId = params.get('sessao');
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  if (!sessaoId) {
+    mostrarErro('Nenhuma sessão informada.');
+    return;
+  }
+
+  const { data, error } = await db.rpc('obter_ou_criar_sala_video', { p_sessao_id: sessaoId });
+
+  if (error || !data?.url) {
+    mostrarErro(error?.message || 'Não foi possível entrar nesta sessão.');
+    return;
+  }
+
+  const iframe = document.createElement('iframe');
+  iframe.src = data.url + '?t=' + data.token;
+  iframe.allow = 'camera; microphone; fullscreen; display-capture; autoplay';
+  document.getElementById('conteudo').innerHTML = '';
+  document.getElementById('conteudo').appendChild(iframe);
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function mostrarErro(msg) {
+  document.getElementById('conteudo').innerHTML = `
+    <div class="estado">
+      <p class="erro">⚠️ ${escapeHtml(msg)}</p>
+      <a href="#" onclick="history.back(); return false;" class="btn-voltar">Voltar</a>
+    </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
