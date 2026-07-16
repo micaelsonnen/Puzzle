@@ -98,6 +98,60 @@ $$;
 ALTER FUNCTION "public"."contar_atendimentos_psicologo"("p_psicologo_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."daily_chamada_api"("v_method" "text", "v_path" "text", "v_body" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'vault', 'extensions'
+    AS $$
+declare
+  v_api_key    text;
+  v_request_id bigint;
+  v_status     int;
+  v_conteudo   text;
+  v_tentativas int := 0;
+begin
+  select decrypted_secret into v_api_key from vault.decrypted_secrets where name = 'daily_api_key';
+  if v_api_key is null then
+    raise exception 'daily_api_key não encontrada no Vault. Configure antes de usar o vídeo.';
+  end if;
+
+  if v_method = 'POST' then
+    v_request_id := net.http_post(
+      url := 'https://api.daily.co/v1' || v_path,
+      headers := jsonb_build_object('Authorization', 'Bearer ' || v_api_key, 'Content-Type', 'application/json'),
+      body := v_body
+    );
+  else
+    v_request_id := net.http_get(
+      url := 'https://api.daily.co/v1' || v_path,
+      headers := jsonb_build_object('Authorization', 'Bearer ' || v_api_key)
+    );
+  end if;
+
+  -- pg_net processa a chamada num worker assíncrono — espera até ~5s
+  -- pela resposta aparecer, checando a cada 200ms.
+  loop
+    select status_code, content into v_status, v_conteudo from net._http_response where id = v_request_id;
+    exit when v_status is not null or v_tentativas > 25;
+    perform pg_sleep(0.2);
+    v_tentativas := v_tentativas + 1;
+  end loop;
+
+  if v_status is null then
+    raise exception 'Tempo esgotado esperando resposta da API do Daily.co.';
+  end if;
+
+  if v_status >= 400 then
+    raise exception 'Erro da API do Daily.co (status %): %', v_status, v_conteudo;
+  end if;
+
+  return v_conteudo::jsonb;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."daily_chamada_api"("v_method" "text", "v_path" "text", "v_body" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."enviar_lembretes_sessao"() RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -231,6 +285,82 @@ $$;
 
 
 ALTER FUNCTION "public"."mind_notificar_agendamento_aceito"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."obter_ou_criar_sala_video"("p_sessao_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_sessao       record;
+  v_sou_psi      boolean;
+  v_sou_pac      boolean;
+  v_video_url    text;
+  v_video_nome   text;
+  v_resposta     jsonb;
+  v_token_resp   jsonb;
+  v_meu_nome     text;
+begin
+  select s.id, s.data_hora, s.video_room_url, s.video_room_name,
+         ps.email as psi_email, ps.nome as psi_nome,
+         p.email as pac_email, p.nome as pac_nome
+  into v_sessao
+  from sessoes s
+  join psicologos ps on ps.id = s.psicologo_id
+  join pacientes p on p.id = s.paciente_id
+  where s.id = p_sessao_id;
+
+  if v_sessao.id is null then
+    raise exception 'Sessão não encontrada.';
+  end if;
+
+  v_sou_psi := v_sessao.psi_email = auth.jwt() ->> 'email';
+  v_sou_pac := v_sessao.pac_email = auth.jwt() ->> 'email';
+
+  if not (v_sou_psi or v_sou_pac) then
+    raise exception 'Acesso negado — você não faz parte desta sessão.';
+  end if;
+
+  v_video_url  := v_sessao.video_room_url;
+  v_video_nome := v_sessao.video_room_name;
+
+  if v_video_url is null then
+    v_video_nome := 'puzzle-' || replace(p_sessao_id::text, '-', '');
+
+    v_resposta := daily_chamada_api('POST', '/rooms', jsonb_build_object(
+      'name', v_video_nome,
+      'privacy', 'private',
+      'properties', jsonb_build_object(
+        'exp', extract(epoch from (v_sessao.data_hora + interval '3 hours'))::bigint,
+        'enable_chat', true,
+        'enable_recording', false,
+        'eject_at_room_exp', true
+      )
+    ));
+
+    v_video_url := v_resposta ->> 'url';
+
+    update sessoes set video_room_url = v_video_url, video_room_name = v_video_nome, video_room_criado_em = now()
+    where id = p_sessao_id;
+  end if;
+
+  v_meu_nome := case when v_sou_psi then v_sessao.psi_nome else v_sessao.pac_nome end;
+
+  v_token_resp := daily_chamada_api('POST', '/meeting-tokens', jsonb_build_object(
+    'properties', jsonb_build_object(
+      'room_name', v_video_nome,
+      'is_owner', v_sou_psi,
+      'user_name', v_meu_nome,
+      'exp', extract(epoch from (now() + interval '3 hours'))::bigint
+    )
+  ));
+
+  return jsonb_build_object('url', v_video_url, 'token', v_token_resp ->> 'token');
+end;
+$$;
+
+
+ALTER FUNCTION "public"."obter_ou_criar_sala_video"("p_sessao_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."rls_auto_enable"() RETURNS "event_trigger"
@@ -632,6 +762,7 @@ CREATE TABLE IF NOT EXISTS "public"."psicologos" (
     "perfil_publico" boolean DEFAULT true,
     "slug" "text",
     "idiomas" "text"[],
+    "primeira_mensalidade_confirmada" boolean DEFAULT false,
     CONSTRAINT "psicologos_plano_check" CHECK (("plano" = ANY (ARRAY['mensal'::"text", 'anual'::"text"]))),
     CONSTRAINT "psicologos_status_assinatura_check" CHECK (("status_assinatura" = ANY (ARRAY['ativa'::"text", 'vencida'::"text", 'cancelada'::"text"]))),
     CONSTRAINT "psicologos_status_cadastro_check" CHECK (("status_cadastro" = ANY (ARRAY['incompleto'::"text", 'em_analise'::"text", 'aprovado'::"text", 'rejeitado'::"text"])))
@@ -677,7 +808,10 @@ CREATE TABLE IF NOT EXISTS "public"."sessoes" (
     "valor_psicologo" numeric(10,2) DEFAULT 50.00,
     "status_pagamento" "text" DEFAULT 'pendente'::"text",
     "criado_em" timestamp with time zone DEFAULT "now"(),
-    "lembrete_enviado" boolean DEFAULT false
+    "lembrete_enviado" boolean DEFAULT false,
+    "video_room_url" "text",
+    "video_room_name" "text",
+    "video_room_criado_em" timestamp with time zone
 );
 
 
@@ -1706,6 +1840,12 @@ GRANT ALL ON FUNCTION "public"."contar_atendimentos_psicologo"("p_psicologo_id" 
 
 
 
+GRANT ALL ON FUNCTION "public"."daily_chamada_api"("v_method" "text", "v_path" "text", "v_body" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."daily_chamada_api"("v_method" "text", "v_path" "text", "v_body" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."daily_chamada_api"("v_method" "text", "v_path" "text", "v_body" "jsonb") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."enviar_lembretes_sessao"() TO "anon";
 GRANT ALL ON FUNCTION "public"."enviar_lembretes_sessao"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."enviar_lembretes_sessao"() TO "service_role";
@@ -1733,6 +1873,13 @@ GRANT ALL ON FUNCTION "public"."mind_enviar_email"("v_to" "text", "v_assunto" "t
 GRANT ALL ON FUNCTION "public"."mind_notificar_agendamento_aceito"() TO "anon";
 GRANT ALL ON FUNCTION "public"."mind_notificar_agendamento_aceito"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."mind_notificar_agendamento_aceito"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."obter_ou_criar_sala_video"("p_sessao_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."obter_ou_criar_sala_video"("p_sessao_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."obter_ou_criar_sala_video"("p_sessao_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."obter_ou_criar_sala_video"("p_sessao_id" "uuid") TO "service_role";
 
 
 
