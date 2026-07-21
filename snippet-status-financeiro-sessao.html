@@ -1,0 +1,88 @@
+<!--
+  snippet-status-financeiro-sessao.html
+
+  Onde usar: na tela onde a sessão é confirmada / o pagamento é criado
+  (provavelmente algo como agendamento.html ou dashboard-paciente.html,
+  no fluxo que hoje insere uma linha em `pagamentos`).
+
+  Como usar:
+  1. Depois de inserir a sessão/pagamento normalmente, leia de volta a
+     linha criada (o trigger já preencheu status_financeiro).
+  2. Chame renderStatusFinanceiro(pagamento) com o resultado.
+  3. Cole o HTML do bloco <div id="statusFinanceiroSessao"> onde fizer
+     sentido no layout da tela de agendamento.
+-->
+
+<div id="statusFinanceiroSessao"></div>
+
+<style>
+  .status-sessao-banner {
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 16px 0;
+  }
+
+  .status-sessao-banner.confirmado {
+    background: #E6F4EA;
+    color: #1E7B34;
+  }
+
+  .status-sessao-banner.aguardando_empresa {
+    background: #FDF3E7;
+    color: #8A5A00;
+  }
+
+  .status-sessao-banner strong { display: block; margin-bottom: 4px; font-size: 15px; }
+</style>
+
+<script>
+  /**
+   * Renderiza o aviso de status financeiro da sessão recém-criada.
+   * @param {object} pagamento - a linha de `pagamentos` já com o
+   *   status_financeiro preenchido pelo trigger (leia de volta com
+   *   .select().single() logo após o insert)
+   */
+  function renderStatusFinanceiroSessao(pagamento) {
+    const container = document.getElementById('statusFinanceiroSessao');
+
+    if (pagamento.status_financeiro === 'confirmado') {
+      container.innerHTML = `
+        <div class="status-sessao-banner confirmado">
+          <strong>Sessão confirmada</strong>
+          Seu horário está garantido.
+        </div>
+      `;
+      return;
+    }
+
+    if (pagamento.status_financeiro === 'aguardando_empresa') {
+      container.innerHTML = `
+        <div class="status-sessao-banner aguardando_empresa">
+          <strong>Sessão reservada, valor social aguardando liberação</strong>
+          No momento não há vaga em nenhum pacote de empresa parceira.
+          Seu horário está reservado e você será avisado assim que
+          liberar — não é necessário fazer nada agora.
+        </div>
+      `;
+      return;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Exemplo de uso no fluxo de agendamento (adapte à função real que já
+  // insere a sessão hoje):
+  // -------------------------------------------------------------------
+  //
+  // const { data: pagamento, error } = await supabase
+  //   .from('pagamentos')
+  //   .insert({ paciente_id: pacienteId, /* demais campos da sessão */ })
+  //   .select()
+  //   .single();
+  //
+  // if (!error) {
+  //   renderStatusFinanceiroSessao(pagamento);
+  // }
+</script>

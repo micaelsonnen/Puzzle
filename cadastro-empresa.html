@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puzzle — Criar conta de empresa</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F7F4EF;
+  --surface: #FFFFFF;
+  --surface2: #f0ece6;
+  --border: #E2DED8;
+  --navy: #2D4A6B;
+  --sage: #5B8C6E;
+  --text: #1A2332;
+  --muted: #6B7A8D;
+  --error: #b91c1c;
+  --success: #5B8C6E;
+}
+body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; }
+.topbar a { color: var(--muted); text-decoration: none; font-size: 14px; }
+.wrap { max-width: 480px; margin: 0 auto; padding: 48px 20px 80px; }
+.intro { text-align: center; margin-bottom: 24px; }
+.intro h2 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+.intro p { color: var(--muted); font-size: 14px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+.aviso-esg { font-size: 12px; color: var(--sage); background: rgba(91,140,110,0.08); border: 1px solid rgba(91,140,110,0.2); border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+.form-group input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.required::after { content: ' *'; color: var(--error); }
+.btn-salvar { width: 100%; background: linear-gradient(135deg, var(--navy), var(--sage)); color: white; border: none; padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+.btn-salvar:disabled { opacity: 0.6; cursor: not-allowed; }
+.msg { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-size: 13px; display: none; }
+.msg.error { background: rgba(185,28,28,0.08); color: var(--error); border: 1px solid rgba(185,28,28,0.2); display: block; }
+.msg.success { background: rgba(91,140,110,0.1); color: var(--sage); border: 1px solid rgba(91,140,110,0.2); display: block; }
+.rodape { text-align: center; margin-top: 20px; font-size: 13px; color: var(--muted); }
+.rodape a { color: var(--navy); font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="topbar"><a href="index.html">← Voltar para o início</a></div>
+
+<div class="wrap">
+  <div class="intro">
+    <h2>Criar conta de empresa</h2>
+    <p>Patrocine a saúde mental dos seus colaboradores — parte da sessão, sem acesso a nenhum dado clínico individual.</p>
+  </div>
+
+  <div class="card">
+    <div class="aviso-esg">
+      🔒 Sua empresa nunca tem acesso a diagnóstico, conteúdo de sessão ou qualquer dado clínico individual — só indicadores agregados e anônimos de impacto.
+    </div>
+
+    <form id="form-cadastro" onsubmit="return false">
+      <div class="form-group">
+        <label class="required">Razão social</label>
+        <input type="text" id="nome" required>
+      </div>
+      <div class="form-group">
+        <label>CNPJ</label>
+        <input type="text" id="cnpj" placeholder="00.000.000/0001-00">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contato de RH</label>
+          <input type="text" id="contato_rh">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="telefone">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="required">E-mail</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="form-group">
+        <label class="required">Senha</label>
+        <input type="password" id="senha" required minlength="8">
+        <div class="hint">Mínimo de 8 caracteres.</div>
+      </div>
+
+      <div id="msg" class="msg"></div>
+
+      <button class="btn-salvar" id="btn-salvar" onclick="cadastrar()">Criar conta da empresa</button>
+    </form>
+
+    <div class="rodape">Já tem conta? <a href="login.html">Entrar</a></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://xzkmokjyaqutkjxqlkck.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_5OMjosvKS6_Mt3gGYUxQ0w_JrMtH1jZ';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function mostrarMsg(texto, tipo) {
+  const el = document.getElementById('msg');
+  el.textContent = texto;
+  el.className = 'msg ' + tipo;
+}
+
+async function cadastrar() {
+  const nome = document.getElementById('nome').value.trim();
+  const cnpj = document.getElementById('cnpj').value.trim();
+  const contato_rh = document.getElementById('contato_rh').value.trim();
+  const telefone = document.getElementById('telefone').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const senha = document.getElementById('senha').value;
+
+  if (!nome || !email || !senha) { mostrarMsg('Preencha ao menos razão social, e-mail e senha.', 'error'); return; }
+  if (senha.length < 8) { mostrarMsg('A senha deve ter no mínimo 8 caracteres.', 'error'); return; }
+
+  const btn = document.getElementById('btn-salvar');
+  btn.disabled = true;
+  btn.textContent = 'Criando conta...';
+
+  const { error: erroAuth } = await db.auth.signUp({ email, password: senha });
+  if (erroAuth) {
+    mostrarMsg('Erro ao criar conta: ' + erroAuth.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Criar conta da empresa';
+    return;
+  }
+
+  // Se já existir uma ficha de empresa com este e-mail (ex: criada
+  // manualmente pelo admin antes), só ativa o acesso — não duplica.
+  const { data: existente } = await db.from('empresas').select('id').eq('email', email).maybeSingle();
+
+  if (!existente) {
+    const { error: erroEmpresa } = await db.from('empresas').insert({
+      nome, email, cnpj: cnpj || null, contato_rh: contato_rh || null, telefone: telefone || null, plano: 'basico'
+    });
+
+    if (erroEmpresa) {
+      mostrarMsg('Conta criada, mas houve um erro ao montar sua ficha: ' + erroEmpresa.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Criar conta da empresa';
+      return;
+    }
+  }
+
+  mostrarMsg('Conta criada com sucesso! Redirecionando...', 'success');
+  setTimeout(() => { window.location.href = 'empresa.html'; }, 1200);
+}
+</script>
+</body>
+</html>

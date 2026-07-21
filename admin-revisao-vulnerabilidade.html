@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revisão de vulnerabilidade social — Admin Mind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #F5F7F5;
+    --surface: #FFFFFF;
+    --text-primary: #1F2A28;
+    --text-secondary: #55625F;
+    --text-muted: #8A948F;
+    --primary: #2F6E5D;
+    --primary-dark: #1F4F42;
+    --accent-soft: #DCEEE7;
+    --border: #DCE3E0;
+    --success-bg: #E6F4EA;
+    --success-text: #1E7B34;
+    --warning-bg: #FDF3E7;
+    --warning-text: #8A5A00;
+    --danger-bg: #FBEAEA;
+    --danger-text: #A32D2D;
+    --danger: #C0392B;
+    --radius: 10px;
+    --font-display: 'Newsreader', Georgia, serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    line-height: 1.6;
+  }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  header.intro { margin-bottom: 28px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  header.intro h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 26px;
+    margin: 0;
+    color: var(--primary-dark);
+  }
+
+  .count-pill {
+    background: var(--accent-soft);
+    color: var(--primary-dark);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 999px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tabs button {
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 10px 4px;
+    margin-right: 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+
+  .tabs button.active {
+    color: var(--primary-dark);
+    border-bottom-color: var(--primary);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-state p { margin: 0; font-size: 14px; }
+
+  .queue-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  .queue-item .row-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    cursor: pointer;
+    gap: 12px;
+  }
+
+  .queue-item .who strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .queue-item .who span {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .score-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    white-space: nowrap;
+  }
+
+  .chevron {
+    color: var(--text-muted);
+    font-size: 13px;
+    transition: transform 0.2s ease;
+  }
+
+  .queue-item.open .chevron { transform: rotate(90deg); }
+
+  .row-detail {
+    display: none;
+    padding: 0 20px 22px;
+    border-top: 1px solid var(--border);
+  }
+
+  .queue-item.open .row-detail { display: block; }
+
+  .answers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+    margin: 18px 0;
+  }
+
+  .answers-grid .item span:first-child {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .answers-grid .item span:last-child {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .docs-section { margin-top: 18px; }
+
+  .docs-section h4 {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+  }
+
+  .doc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .doc-row:last-child { border-bottom: none; }
+
+  .doc-row a {
+    color: var(--primary);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .doc-row a:hover { text-decoration: underline; }
+
+  .no-docs { font-size: 13px; color: var(--text-muted); font-style: italic; }
+
+  .decision-area {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .decision-area label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .decision-area textarea {
+    width: 100%;
+    min-height: 70px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 14px;
+    resize: vertical;
+  }
+
+  .decision-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  button.btn {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  button.btn.approve { background: var(--primary); color: #fff; }
+  button.btn.reject { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-bg); }
+  button.btn.link-style { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .status-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .status-tag.aprovado_manual, .status-tag.aprovado_automatico { background: var(--success-bg); color: var(--success-text); }
+  .status-tag.rejeitado { background: var(--danger-bg); color: var(--danger-text); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-dark);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .toast.visible { opacity: 1; }
+
+  .access-denied {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="intro">
+    <h1>Revisão de vulnerabilidade social</h1>
+    <span class="count-pill" id="countPill">carregando…</span>
+  </header>
+
+  <div class="tabs">
+    <button class="active" data-tab="fila">Fila de revisão</button>
+    <button data-tab="historico">Decisões recentes</button>
+  </div>
+
+  <div id="tabFila"></div>
+  <div id="tabHistorico" style="display:none"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---------------------------------------------------------------------
+  // Mesma configuração usada em avaliacao-vulnerabilidade.html — se o
+  // admin.html já tem um supabaseClient.js compartilhado, use-o em vez
+  // de duplicar aqui.
+  // ---------------------------------------------------------------------
+  const SUPABASE_URL = 'https://SEU_PROJETO.supabase.co';
+  const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_PUBLICA';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const BUCKET = 'comprovantes-vulnerabilidade';
+
+  const TIPOS_DOCUMENTO_LABEL = {
+    cadunico: 'Comprovante CadÚnico',
+    folha_resumo: 'Folha Resumo CadÚnico',
+    cartao_nis: 'Cartão / NIS',
+    comprovante_bolsa_familia: 'Comprovante Bolsa Família',
+    outro: 'Outro documento',
+  };
+
+  const EMPREGO_LABEL = {
+    empregado_clt: 'Empregado (CLT)',
+    empregado_informal: 'Trabalho informal',
+    autonomo: 'Autônomo',
+    desempregado: 'Desempregado',
+    aposentado: 'Aposentado',
+    outro: 'Outro',
+  };
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 3000);
+  }
+
+  // -------------------- abas --------------------
+  document.querySelectorAll('.tabs button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('tabFila').style.display = tab === 'fila' ? 'block' : 'none';
+      document.getElementById('tabHistorico').style.display = tab === 'historico' ? 'block' : 'none';
+      if (tab === 'historico') carregarHistorico();
+    });
+  });
+
+  // -------------------- carregar fila --------------------
+  async function carregarFila() {
+    const container = document.getElementById('tabFila');
+    const { data, error } = await supabase
+      .from('avaliacoes_socioeconomicas')
+      .select(`
+        id, renda_per_capita, num_moradores, situacao_emprego,
+        possui_cadunico, beneficiario_bolsa_familia, pessoa_deficiencia_familia,
+        pontuacao_calculada, status, criado_em,
+        pacientes ( nome ),
+        comprovantes_vulnerabilidade ( id, tipo_documento, caminho_arquivo )
+      `)
+      .eq('status', 'em_revisao')
+      .order('criado_em', { ascending: true });
+
+    if (error) {
+      container.innerHTML = `<div class="empty-state"><p>Não foi possível carregar a fila. ${error.message}</p></div>`;
+      return;
+    }
+
+    document.getElementById('countPill').textContent = `${data.length} na fila`;
+
+    if (data.length === 0) {
+      container.innerHTML = `<div class="empty-state"><p>Nenhuma avaliação aguardando revisão no momento.</p></div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    data.forEach((avaliacao) => container.appendChild(renderQueueItem(avaliacao)));
+  }
+
+  function renderQueueItem(avaliacao) {
+    const el = document.createElement('div');
+    el.className = 'queue-item';
+
+    const nomePaciente = avaliacao.pacientes ? avaliacao.pacientes.nome : 'Paciente';
+
+    el.innerHTML = `
+      <div class="row-summary">
+        <div class="who">
+          <strong>${nomePaciente}</strong>
+          <span>Enviado em ${new Date(avaliacao.criado_em).toLocaleDateString('pt-BR')}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="score-badge">${avaliacao.pontuacao_calculada} pontos</span>
+          <span class="chevron">▸</span>
+        </div>
+      </div>
+      <div class="row-detail"></div>
+    `;
+
+    const summary = el.querySelector('.row-summary');
+    const detail = el.querySelector('.row-detail');
+
+    summary.addEventListener('click', () => {
+      el.classList.toggle('open');
+      if (el.classList.contains('open') && detail.innerHTML === '') {
+        renderDetail(detail, avaliacao);
+      }
+    });
+
+    return el;
+  }
+
+  function renderDetail(detail, avaliacao) {
+    const respostas = [
+      ['Renda por pessoa', `R$ ${Number(avaliacao.renda_per_capita).toFixed(2)}`],
+      ['Moradores na casa', avaliacao.num_moradores],
+      ['Situação de trabalho', EMPREGO_LABEL[avaliacao.situacao_emprego] || avaliacao.situacao_emprego],
+      ['CadÚnico', avaliacao.possui_cadunico ? 'Sim' : 'Não'],
+      ['Bolsa Família', avaliacao.beneficiario_bolsa_familia ? 'Sim' : 'Não'],
+      ['Deficiência na família', avaliacao.pessoa_deficiencia_familia ? 'Sim' : 'Não'],
+    ];
+
+    const answersHtml = respostas.map(([label, value]) => `
+      <div class="item"><span>${label}</span><span>${value}</span></div>
+    `).join('');
+
+    const docs = avaliacao.comprovantes_vulnerabilidade || [];
+    const docsHtml = docs.length
+      ? docs.map((d) => `
+          <div class="doc-row">
+            <span>${TIPOS_DOCUMENTO_LABEL[d.tipo_documento] || d.tipo_documento}</span>
+            <a href="#" data-path="${d.caminho_arquivo}" class="view-doc">Ver documento</a>
+          </div>
+        `).join('')
+      : '<p class="no-docs">Nenhum comprovante enviado.</p>';
+
+    detail.innerHTML = `
+      <div class="answers-grid">${answersHtml}</div>
+      <div class="docs-section">
+        <h4>Comprovantes</h4>
+        ${docsHtml}
+      </div>
+      <div class="decision-area">
+        <label for="notas-${avaliacao.id}">Observações (obrigatório em caso de rejeição)</label>
+        <textarea id="notas-${avaliacao.id}" placeholder="Ex: documento ilegível, renda declarada não confere com o comprovante..."></textarea>
+        <div class="decision-actions">
+          <button class="btn approve" data-action="aprovar" data-id="${avaliacao.id}">Aprovar atendimento social</button>
+          <button class="btn reject" data-action="rejeitar" data-id="${avaliacao.id}">Rejeitar</button>
+        </div>
+      </div>
+    `;
+
+    // signed URLs — 5 minutos, mesmo padrão usado pros documentos de psicólogos
+    detail.querySelectorAll('.view-doc').forEach((link) => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const path = link.dataset.path;
+        const { data, error } = await supabase.storage
+          .from(BUCKET)
+          .createSignedUrl(path, 300);
+
+        if (error) { showToast('Não foi possível abrir o documento.'); return; }
+        window.open(data.signedUrl, '_blank', 'noopener');
+      });
+    });
+
+    detail.querySelector('[data-action="aprovar"]').addEventListener('click', () => decidir(avaliacao.id, 'aprovado_manual', detail));
+    detail.querySelector('[data-action="rejeitar"]').addEventListener('click', () => decidir(avaliacao.id, 'rejeitado', detail));
+  }
+
+  async function decidir(avaliacaoId, novoStatus, detail) {
+    const notas = detail.querySelector('textarea').value.trim();
+
+    if (novoStatus === 'rejeitado' && !notas) {
+      showToast('Escreva uma observação explicando o motivo da rejeição.');
+      return;
+    }
+
+    const botoes = detail.querySelectorAll('.decision-actions button');
+    botoes.forEach((b) => (b.disabled = true));
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+      .from('avaliacoes_socioeconomicas')
+      .update({
+        status: novoStatus,
+        revisado_por: user ? user.id : null,
+        revisado_em: new Date().toISOString(),
+        observacoes_admin: notas || null,
+      })
+      .eq('id', avaliacaoId);
+
+    if (error) {
+      showToast('Não foi possível salvar a decisão. Tente novamente.');
+      botoes.forEach((b) => (b.disabled = false));
+      return;
+    }
+
+    showToast(novoStatus === 'aprovado_manual' ? 'Atendimento social aprovado.' : 'Avaliação rejeitada.');
+    carregarFila();
+  }
+
+  // -------------------- histórico --------------------
+  async function carregarHistorico() {
+    const container = document.getElementById('tabHistorico');
+    container.innerHTML = '<div class="empty-state"><p>Carregando…</p></div>';
+
+    const { data, error } = await supabase
+      .from('avaliacoes_socioeconomicas')
+      .select('id, pacientes ( nome ), status, revisado_em, observacoes_admin')
+      .in('status', ['aprovado_manual', 'rejeitado'])
+      .order('revisado_em', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      container.innerHTML = `<div class="empty-state"><p>Não foi possível carregar o histórico.</p></div>`;
+      return;
+    }
+
+    if (data.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>Nenhuma decisão manual registrada ainda.</p></div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    data.forEach((item) => {
+      const nomePaciente = item.pacientes ? item.pacientes.nome : 'Paciente';
+      const row = document.createElement('div');
+      row.className = 'history-item';
+      row.innerHTML = `
+        <div>
+          <strong>${nomePaciente}</strong><br>
+          <span style="font-size:12px; color:var(--text-muted)">${item.observacoes_admin || 'Sem observações'}</span>
+        </div>
+        <span class="status-tag ${item.status}">${item.status === 'aprovado_manual' ? 'Aprovado' : 'Rejeitado'}</span>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  carregarFila();
+</script>
+
+</body>
+</html>
