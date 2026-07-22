@@ -1,6 +1,6 @@
-# Mind — Plataforma de Psicoterapia Acessível
+# Puzzle — Plataforma de Psicoterapia Acessível
 
-[#mind--plataforma-de-psicoterapia-acessível](#mind--plataforma-de-psicoterapia-acessível)
+[#puzzle--plataforma-de-psicoterapia-acessível](#puzzle--plataforma-de-psicoterapia-acessível)
 > HealthTech com financiamento tripartite (empresa + paciente + psicólogo) e prontuário estruturado sem IA. Stack: HTML/CSS/JS vanilla + Supabase (Postgres + Auth + Storage) + Chart.js + jsPDF.
 
 Este README documenta o estado do projeto após as rodadas de implementação registradas nesta conversa. Serve como ponto de partida para quem continuar o desenvolvimento.
@@ -134,6 +134,8 @@ Scripts auxiliares (não fazem parte da sequência de migrations, rodar sob dema
 | Paciente  | `paciente.demo-mind@example.com`  | `MindDemo123!` |
 
 Admin (acesso a `admin.html` e às telas de vulnerabilidade social): qualquer e-mail cadastrado na tabela `admins`.
+
+*Nota: as credenciais de demo acima usam "mind" no e-mail/senha porque foram semeadas (`seed_login_demo.sql`) antes do nome do produto ser definido como Puzzle — são só identificadores, não afetam a marca.*
 
 ---
 
